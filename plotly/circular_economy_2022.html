@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+
+<html lang="zh-tw" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>物質流總覽</title>
+    <script src="js/plotly-2.12.1.min.js"></script>
+    <!--jquery modal-->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+    <script>
+        $(function () {
+            //$("#dialog").dialog();
+            $("#dialogFlow,#dialogNode,#myDivDefinition").dialog({
+                autoOpen: false,
+                width: 950,
+                height: 300
+            });
+            $("#myDivLine,#myDivPie").dialog({
+                autoOpen: false,
+                height: 800,
+                width: 1500
+            });
+            init();
+        });
+    </script>
+</head>
+
+<style>
+
+    /* 在節點名稱的 CSS 中添加以下樣式 */
+    .sankey-node-label {
+        position: relative; /* 設定相對定位，以便我們在其中添加顯示數值的元素 */
+    }
+
+    /* 顯示數值的樣式 */
+    .sankey-node-label span.node-value {
+        display: block;
+        font-size: 12px;
+        color: gray;
+        text-align: center;
+    }
+
+    #myDivPie {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+
+    .scatterlayer path.point {
+        filter: drop-shadow(0 0 5px rgba(232, 232, 236, 0.8));
+    }
+    .unit{
+        display: flex;
+        justify-content: flex-start;
+        margin-left: 1650px;
+        font-size: 25px;
+    }
+    .remarks{
+        display: flex;
+        justify-content: flex-start;
+        margin-left: 100px;
+        font-size: 25px;
+    }
+
+    .floating-img {
+        transition: transform 0.3s ease; /* 動畫過渡效果 */
+    }
+
+    .floating-img:hover {
+        transform: scale(1.1); /* 放大1.1倍 */
+        /* 或其他浮動效果，例如位移或陰影等 */
+    }
+
+    /* 選單上字型調整*/ 
+    .dropbtn {
+        background-color: #3498db;
+        color: white;
+        padding: 15px;
+        font-size: 20px; 
+        border: none;
+        cursor: pointer;
+    }
+
+    /* Dropdown button on hover & focus */ 滑鼠點擊選單會產生的顏色
+    .dropbtn:hover,
+    .dropbtn:focus {
+        background-color: #2980b9;
+    }
+
+    /* The container <div> - needed to position the dropdown content */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Dropdown Content (Hidden by Default) */
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f1f1f1;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        font-size:  25px;
+    }
+
+    /* Links inside the dropdown */
+    .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+    /* Change color of dropdown links on hover */
+    .dropdown-content a:hover {
+        background-color: #ddd;
+    }
+    /* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+    .show {
+        display: block;
+    }
+</style>
+
+<body>
+    <div class="dropdown">
+        <button onclick="myFunction()" class="dropbtn">年度</button>
+        <div id="myDropdown" class="dropdown-content">
+          <a href="circular_economy_2022.html">2022</a>
+          <a href="circular_economy.html">2021</a>
+          <a href="twenty.html">2020</a>
+          <a href="nine.html">2019</a>
+          <a href="eight.html">2018</a>
+          <a href="seven.html">2017</a>
+          <a href="six.html">2016</a>
+         <!-- <a href="five.html">2015</a>
+          <a href="four.html">2014</a>
+          <a href="three.html">2013</a>
+          <a href="two.html">2012</a>-->
+        </div>
+      </div>
+
+    <div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
+    </div>
+    <div id="dialogNode" title="">
+        <table style="width:80%;">
+            <tr>
+                <td id="tdCollapse"><b style="cursor: pointer;" onclick="closeDialog(); Plotly.newPlot('myDiv', data, layout); isExpand = false; init();">Collapse</b></td>
+                <td><img class="floating-img" src="img/line.png" width="300" height="200" title="歷年趨勢圖" style="cursor: pointer;" onclick="closeDialog();$('#myDivLine').dialog('open');" /></td>
+                <td><img class="floating-img" src="img/pie.png" width="300" height="200" title="歷年比例" style="cursor: pointer;" onclick="closeDialog();$('#myDivPie').dialog('open');" /></td>
+                <td><img class="floating-img" src="img/def.png" width="300" height="200" title="定義" style="cursor: pointer;" onclick="closeDialog();$('#myDivDefinition').dialog('open');"  /></td>                
+            </tr>
+        </table>
+    </div>
+    <div id='myDivLine' title="Time graphs" style="width:1400px;height:700px;">
+    </div>
+    <div id='myDivPie' title="Pie chart" style="width:1000px;height:700px;">
+    </div>
+    <div id='myDivDefinition' title="Definition">
+        Material use includes metal ores, metals and non-metallic minerals, 
+        as well as those fractions of fossil and biomass materials not used for energy provision.
+    </div>
+
+    <div id="remarks" class="remarks">
+        <a>**廢棄產出 94.7 = 一般廢棄物 11.2 + 事業廢棄物 21.1 + 其他（營建剩餘土石方＋農業資材＋煉鋼爐石＋紙類） 62.4</a>
+    </div>
+
+    <div id="unit" class="unit">
+        <a>單位: 百萬公噸</a>
+    </div>
+
+
+    <script>
+        function myFunction() {
+            document.getElementById("myDropdown").classList.toggle("show");
+        }
+        // Close the dropdown menu if the user clicks outside of it
+        window.onclick = function (event) {
+            if (!event.target.matches(".dropbtn")) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                var i;
+                for (i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains("show")) {
+                    openDropdown.classList.remove("show");
+                    }
+                }
+            }
+        };
+
+        var isExpand = false;
+        var isDetail = false;
+        var isHighlight = false;
+        var grayColor = "rgba(242, 242, 242, 0.8)";
+        var data = [{
+            type: "sankey",
+            arrangement: "fixed",
+            node: {
+                label: [
+                    //0
+                    "進口<br>236.2 (71.6 %)",
+                    //1
+                    "國內開採<br>93.8 (28.4 %)",
+                    //2
+                    "直接物質投入<br>330.1",
+                    //3
+                    "製程物質投入<br>417.6",
+                    //4
+                    "出口<br>67.2",
+                    //5
+                    "排出至環境<br>112.0",
+                    //6
+                    "國內物質使用<br>238.4 (57.1 %)",
+                    //7
+                    "庫存<br>143.7",
+                    //8
+                    "廢棄產出**<br>94.7 (39.8 %)",
+                    //9
+                    "掩埋<br>1.0",
+                    //10
+                    "焚化<br>6.2",
+                    //11
+                    "回收再利用<br>87.5 (92.4 %)",
+
+
+
+                ],
+                x: [0.01, 0.01, 0.2, 0.4, 0.99, 0.99, 0.6, 0.99, 0.7, 0.99, 0.99, 0.99 ],
+                y: [0.3, 0.8, 0.5, 0.5, 0.05, 0.20, 0.7, 0.35, 0.8, 0.5, 0.65, 0.8  ],
+                text:[
+                    "236.2",
+                    "93.8",
+                    "330.1",
+                    "417.6",
+                    "67.2",
+                    "112.0",
+                    "238.4",
+                    "143.7",
+                    "94.7",
+                    "1.0",
+                    "6.2",
+                    "87.5",
+                ],
+                pad: 50,// 10 Pixels
+                hovertemplate: '%{label} <extra></extra>',
+            },
+            link: {
+                source: [0, 1, 2, 3, 3, 3, 6, 6, 8, 8, 8, 11],
+                target: [2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 3],
+                value: [236241871, 93819612, 330061483, 67174311, 112028831, 238369352,
+                143676152, 94693199, 1017064, 6165124, 87511011, 87511011
+            ],
+                color:[
+                  "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+                  "F0ECEA","F0ECEA","F0ECEA","FBE2E1",
+                ],
+                hovertemplate: 'Total:%{value}<extra></extra>'
+            }
+        }]
+        
+        
+        var layout = {
+             title: "2022 物質流總覽",
+            font: {
+                   size: 25, 
+            },
+            height: 750
+        };
+
+        
+        Plotly.newPlot('myDiv', data, layout)
+
+        var myDiv = document.getElementById('myDiv');
+        var myDivLine = document.getElementById('myDivLine');
+        var myDivPie = document.getElementById('myDivPie');
+
+
+        myDiv.on('plotly_click', function(data) {
+            if (data.points.length > 0) {
+                var nodeName = data.points[0].label;
+
+                var indexOfLineBreak = nodeName.indexOf("<br>");
+                if (indexOfLineBreak !== -1) {
+                nodeName = nodeName.substring(0, indexOfLineBreak); // 截取換行符之前的部分
+                }
+
+                showLineChart(nodeName);
+                showPieChart(nodeName);
+                showDefinition(nodeName)
+            }
+        });
+
+
+        // 先定義每個節點對應的折線圖數據
+        var lineChartData ={
+            "進口":{
+               x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
+               y: [
+               241556616, 250640208, 255546601, 253169026, 254087544, 255291925,
+               255546601, 245315669, 231061014, 248591834,
+                ],
+                type: "scatter",
+               line: {
+                color: "8CB1D5", // 線條顏色
+                shape: "spline", // 設定為平滑曲線
+                width: 3, // 線條寬度
+                },
+               mode: "lines+markers", // 顯示標記點和線條
+               marker: {
+                size: 8, // 標記點大小
+                line: {
+                    color: "8CB1D5", // 藍色
+                    width: 2, // 點的邊框寬度
+                },
+                opacity: 1.0, // 點的透明度
+                symbol: "circle", // 點的形狀為圓形
+               },
+            },
+            "國內開採":{
+               x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
+               y: [
+               99977935, 93498518, 95850463, 88647243, 80154146, 80877022, 81050781,
+               80092200, 93947317, 94562316,
+                ],
+               type: "scatter",
+               line: {
+                color: "8CB1D5", // 線條顏色
+                shape: "spline", // 設定為平滑曲線
+                width: 3, // 線條寬度
+                },
+               mode: "lines+markers", // 顯示標記點和線條
+               marker: {
+                size: 8, // 標記點大小
+                line: {
+                    color: "8CB1D5", // 藍色
+                    width: 2, // 點的邊框寬度
+                },
+                opacity: 1.0, // 點的透明度
+                symbol: "circle", // 點的形狀為圓形
+               },
+            },
+            "直接物質投入":{
+               x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
+               y: [
+               99977935, 93498518, 95850463, 88647243, 80154146, 80877022, 81050781,
+               80092200, 93947317, 94562316,
+                ],
+               type: "scatter",
+            },   
+            "排出至環境":{
+               x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021],
+               y: [
+               99977935, 93498518, 95850463, 88647243, 80154146, 80877022, 81050781,
+               80092200, 93947317, 94562316,
+                ],
+               type: "scatter",
+            }            
+        }
+
+ 
+        // 先定義每個節點對應的圓餅圖數據
+        var pieChartData ={
+            "進口":{
+                values: [8, 15, 15, 62],
+                labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+                type: "pie",
+                textinfo: "percent+label", // 顯示百分比和標籤
+                marker: {
+                    colors: ["#283593", "#FFB300", "#388E3C", "#E65100"], // 自訂顏色
+                    line: {
+                        color: "white", // 標籤線的顏色
+                        width: 2, // 標籤線的寬度
+                    },
+                },
+                hoverinfo: "label+percent", // 滑鼠懸停時顯示標籤和百分比
+                textposition:"outside",
+                automargin: true,
+                hole: 0.7,
+            },
+            "國內開採":{
+               values: [10.8, 0, 89.0, 0.2],
+               labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+                type: "pie",
+                textinfo: "percent+label", // 顯示百分比和標籤
+                marker: {
+                    colors: ["#283593", "#FFB300", "#388E3C", "#E65100"], // 自訂顏色
+                    line: {
+                        color: "white", // 標籤線的顏色
+                        width: 2, // 標籤線的寬度
+                    },
+                },
+                hoverinfo: "label+percent", // 滑鼠懸停時顯示標籤和百分比
+                textposition:"outside",
+                automargin: true,
+                hole: 0.7,
+            },
+            "直接物質投入":{
+               values: [10.8, 0, 89.0, 0.2],
+               labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+                type: "pie",
+            },
+            "排出至環境":{
+               values: [10.8, 0, 89.0, 0.2],
+               labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+                type: "pie",
+            }
+        }
+
+
+        function showLineChart(nodeName) {
+            
+            var chartData = lineChartData[nodeName]; // 使用對應節點的折線圖數據
+            var layout = {
+                title: nodeName + "歷年趨勢圖",
+                font: {
+                    color: "white", // 將字體顏色設定為白色
+                    size: 18,
+                },
+                plot_bgcolor: "rgba(0, 0, 0, 0)", // 將背景顏色設定為透明
+                paper_bgcolor: "rgba(50, 50, 50, 0.8)", // 將紙張背景顏色設定為黑色
+                xaxis: {
+                    color: "white", // 將 x 軸字體顏色設定為白色
+                    linecolor: "white", // x 軸線條顏色為白色
+                    linewidth: 1, // x 軸線條寬度
+                    gridcolor: "rgba(255, 255, 255, 0.1)", // 設定格線顏色
+                    gridwidth: 0.5, // 設定格線寬度
+                    dtick:1, //刻度間距的值，這裡設定為 1
+                },
+                yaxis: {
+                    color: "white", // 將 y 軸字體顏色設定為白色
+                    linecolor: "white", // y 軸線條顏色為白色
+                    linewidth: 1, // y 軸線條寬度
+                    gridcolor: "rgba(255, 255, 255, 0.1)", // 設定格線顏色
+                    gridwidth: 0.5, // 設定格線寬度
+                },
+            };
+
+            Plotly.react('myDivLine', [chartData], layout); // 更新折線圖
+        }
+
+        function showPieChart(nodeName) {
+            var chartData2 = pieChartData[nodeName]; // 使用對應節點的折線圖數據
+            var layout2 = {
+                title: nodeName + "圓餅圖",
+                font: {
+                    size: 25,
+                },
+                showlegend: true, // 顯示圖例
+                legend: {
+                    x: 1, // 圖例位置
+                    y: 1.1,
+                },
+                paper_bgcolor: "white", // 背景顏色
+                margin: {
+                    l: 50,
+                    r: 50,
+                    t: 100,
+                    b: 50,
+                },
+                annotations: [{
+                    font: {
+                        size: 25,
+                    },
+                    showarrow: false,
+                    text: "總數: 100%", // 在圓餅圖中心顯示總數
+                    x: 0.5,
+                    y: 0.5,
+                }],
+            };
+
+            Plotly.react('myDivPie', [chartData2], layout2); // 更新折線圖
+        }
+
+        var customData = {
+                    //0
+                    "進口":"「進口」 指的是來自其他國家的原料或貨品進入我國的經濟活動。",
+                    //1
+                    "國內開採":"「國內開採」指的是從我國自然環境中提取的材料總量，以進一步在經濟中加工使用。",
+                    //2
+                    "直接物質投入":"「直接物質投入(DMI)」指的是進入經濟體的物質直接投入。直接物質投入 DMI包括所有有經濟價值且可用於生產和消費活動的物質，並且它的計算方式為國內開採量加上實際進口量的總和。",
+                    //3
+                    "製程物料投入":"「製程物料投入」定義為DMI和二次物料輸入(即來自回收和再生的物料)的總和。",
+                    //4
+                    "出口":"「出口」指的是從我國銷售至其他國家的貨物。",
+                    //5
+                    "排出至環境":"「排出至環境」指的是國家經濟體所釋放的液體和氣體物質總量（不包括水和呼吸產生二氧化碳），這些物質被自然環境，特別是大氣所吸收。",
+                    //6
+                    "國內物質使用":"「國內物質使用」包括生物質、金屬、非金屬以及化石燃料中未用於能源供應的部分。",
+                    //7
+                    "庫存":"「庫存」指的是經濟體的實質增長，每年都會有物料加入經濟體庫存中，而隨著建築物拆除和耐用消費品報廢，舊物料會被從庫存中移除。",
+                    //8
+                    "廢棄產出":"「廢棄產出」指的是從經濟活動中廢棄產出而來的廢棄物或資源。 「焚化」 指的是來自一般廢棄物和事業廢棄物的垃圾焚化量。",
+                    //9
+                    "掩埋": "「掩埋」 指的是來自一般廢棄物和事業廢棄物的掩埋量。",
+                    //10
+                    "焚化":"「焚化」 指的是來自一般廢棄物和事業廢棄物的垃圾焚化量。",
+                    //11
+                    "回收再利用":"「回收再利用」是指將廢棄物重新加工成產品、材料或物質的任何作法，無論是回歸原來的用途還是其他用途。它包括有機物料的再加工，但不包括能源回收和重新加工成燃料或用於填埋的材料。納入計算之種類包括：一般廢棄物、事業廢棄物、農業資材、紙類、營建剩餘土石方及煉鋼爐石回收量。",
+                }
+
+        function showDefinition(nodeName, nodeDefinition) {
+            var definition = customData[nodeName]; // 使用修改後的 customData 對象
+          $("#myDivDefinition").html(definition);
+          $("#myDivDefinition").css("font-size", "25px");
+
+    }
+
+ 
+
+        // #endregion 
+
+
+        function closeDialog() {
+            $('#dialogFlow').dialog('close');
+            $('#dialogNode').dialog('close');
+        }
+        function init() {
+            var myPlot = document.getElementById('myDiv')
+
+            myPlot.on('plotly_click', function (data) {
+                console.log(data);
+                closeDialog();
+                if (data.points.length > 0) {
+                    if (data.points[0].flow) {
+
+                        $("#dialogFlow").dialog({ title: data.points[0].target.label });
+
+                        if (isDetail == false) {
+                            $("#tdDetail").show();
+                            $("#tdHideDetail").hide();
+                            
+                            $("#tdNoHighlight").hide();
+                            $("#tdHighlight").hide();
+                        }
+                        else {
+                            $("#tdHideDetail").show();
+                            $("#tdDetail").hide();
+
+                            if (isHighlight == false) {
+                                $("#tdHighlight").show();
+                                $("#tdNoHighlight").hide();
+
+                            }
+                            else {
+                                $("#tdNoHighlight").show();
+                                $("#tdHighlight").hide();
+                            }
+                            
+                        }
+
+                        
+
+                        $("#dialogFlow").dialog("open");
+                    }
+                    else {
+                        var nodeName = data.points[0].label;
+
+                        var indexOfLineBreak = nodeName.indexOf("<br>");
+                        if (indexOfLineBreak !== -1) {
+                            nodeName = nodeName.substring(0, indexOfLineBreak); // 截取換行符之前的部分
+                        }
+                        
+                        // 根據節點數值動態設定對話框的標題
+                        $("#dialogNode").dialog(({ title: nodeName }));
+                        if (data.points[0].label == 'Exports 0.72') {
+                            if (isExpand == false) {
+                                $("#tdExpand").show();
+                                $("#tdCollapse").hide();
+
+                            }
+                            else {
+                                $("#tdCollapse").show();
+                                $("#tdExpand").hide();
+                            }
+                        }
+                        else {
+                            $("#tdExpand").hide();
+                            $("#tdCollapse").hide();
+                        }
+                        $("#dialogNode").dialog("open");
+                    }
+
+                }
+            });
+        }        
+
+
+    </script>
+
+</body>
+</html>
