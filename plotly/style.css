@@ -104,6 +104,10 @@
         .button:hover {
           background-color: #f0f0f0; /* 鼠标悬停时的背景颜色 */
         }
+        #now-button {
+          background-color: #f0f0f0; /* 你想要的新颜色 */
+          border: 2px solid #b4ade9; /* 可选：更改边框颜色 */
+        }
 
         body {
           display: flex;
