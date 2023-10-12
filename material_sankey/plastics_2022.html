@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+
+<html lang="zh-tw" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="logo-image">
+        <div>
+            <picture><source type="image/webp" srcset="https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000021-8102381026/450/itri_CEL_A.webp?ph=793b5686c3 450w, https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000021-8102381026/700/itri_CEL_A.webp?ph=793b5686c3 700w, https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000021-8102381026/itri_CEL_A.webp?ph=793b5686c3 721w" sizes="(min-width: 600px) 450px, (min-width: 360px) calc(100vw * 0.8), 100vw" ><img src="https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000020-60a5860a5b/itri_CEL_A.png?ph=793b5686c3" alt="" width="240" height="56" class="wnd-logo-img" ></picture>
+        </div>
+    </div>
+    <h1>主題分析</h1>
+    <nav>
+        <ul>
+            <li><!--<a href="https://hws-site.webnode.tw/">-->回首頁</a></li>
+            <li><a href="https://www.reca.gov.tw/">循環署網</a></li>
+            <li><a href="https://smmdb.moenv.gov.tw/SMM/WebPage/MF_index.aspx#section2">指標頁面</a></li>
+            <li><a href="https://smmdb.moenv.gov.tw/SMM/WebPage/enter.aspx">分析系統</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+<div class="background-bar">
+    <div class="text">
+        <h2><i class="fa-solid fa-puzzle-piece"></i> 主題: 塑膠物質流布</h2>
+        <h3><i class="fab fa-unity"></i> 單位: 萬公噸</h3>
+    </div>
+    <div class="button-container">
+        <a href="https://b00060.github.io/sankey.github.io/plotly/circular_economy_2022.html" style="text-decoration: none;">
+        <div class="button" >
+            <img src="img/all.png" alt="總體物質流"> 總體物質流
+        </div>
+        <a style="text-decoration: none;">
+        <div class="button" id="now-button">
+            <img src="img/plastics.png" alt="塑膠"> 塑膠
+        </div>
+        </a>
+        <a href="https://b00060.github.io/sankey.github.io/material_sankey/minprogress.html" style="text-decoration: none;">
+        <div class="button">
+            <img src="img/steel-beam.png" alt="金屬"> 金屬
+        </div>
+        </a>
+        <a href="https://b00060.github.io/sankey.github.io/material_sankey/binprogress.html" style="text-decoration: none;">
+        <div class="button">
+            <img src="img/biomass-energy.png" alt="生物質"> 生物質
+        </div>
+        </a>
+        <a href="https://b00060.github.io/sankey.github.io/material_sankey/oinprogress.html" style="text-decoration: none;">
+        <div class="button">
+            <img src="img/sand.png" alt="無機資源"> 無機資源
+        </div>
+        </a>
+    </div>
+</div>
+
+  <div class="dropdown">
+    <button onclick="myFunction()" class="dropbtn">年度</button>
+    <div id="myDropdown" class="dropdown-content">
+      <a href="plastics_2022.html">2022</a>
+      <a href="plastics_2021.html">2021</a>
+      <a href="plastics_2020.html">2020</a>
+      <a href="plastics_2019.html">2019</a>
+      <a href="plastics_2018.html">2018</a>
+      <a href="plastics_2017.html">2017</a>
+      <a href="plastics_2016.html">2016</a>
+     <!-- <a href="five.html">2015</a>
+      <a href="four.html">2014</a>
+      <a href="three.html">2013</a>
+      <a href="two.html">2012</a>-->
+    </div>
+  </div>
+
+    <!-- 新增第二個選單 -->
+  <!--<div class="dropdown">
+    <button onclick="myFunction2()" class="dropbtn">金屬</button>
+    <div id="myDropdown2" class="dropdown-content">
+      <a href="pflow2021.html">2021</a>
+      <a href="category2.html">2020</a>
+      <a href="category3.html">2019</a>
+       加入更多類別選項
+    </div>
+  </div> -->
+
+</div>
+<button id="updateButton">原料->產業</button>
+</div>
+
+</div>
+  <div id="embedPageFrame" class="back">
+    <a href="plastics_2022.html">Back</a>
+</div>
+
+  <div id="myDiv" style:width: 200%></div>
+    <!-- Plotly chart will be drawn inside this DIV -->
+  <div id="4import" class = "middle"></div>
+
+  <div id="unit" class="unit">
+    <a></a>
+  </div>
+</main>>
+
+  <script>
+    function embedDefaultPage() {
+      document.getElementById("embedPageFrame");
+    }
+
+    function myFunction() {
+      document.getElementById("myDropdown").classList.toggle("show");
+    }
+
+    /*可點擊新增的第二個選單
+     function myFunction2() {
+      document.getElementById("myDropdown2").classList.toggle("show");
+    }*/
+
+    // Close the dropdown menu if the user clicks outside of it
+    window.onclick = function (event) {
+      if (!event.target.matches(".dropbtn")) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains("show")) {
+            openDropdown.classList.remove("show");
+          }
+        }
+      }
+    };
+
+    var nodeLabels = [
+      "石化原料進口 (1013.8)", //0
+      "基本原料進口 (277.5)",
+      "塑膠原料進口 (136.2)",
+      "單體原料進口 (50.0)", //3
+      "塑膠製品進口 (58.1)",
+      "產業用料進口 (24.0)",
+      "進口 (1559.6)", //6
+      "國內產業 (1756.5)",
+      "出口 (1418.4)",
+      "國內使用 (338.0)",//9
+      "塑膠原料出口 (814.7)",
+      "基本原料出口 (236.1)",
+      "單體原料出口 (219.4)",
+      "塑膠製品出口 (136.2)",
+      "產業用料出口 (12.2)",
+      "廢棄物 (253.0)",
+      "國內存量 (85.1)",
+      "能源回收 (140.1)",
+      "掩埋 (8.6)",
+      "回收再利用 (104.2)", //19
+      "其他原料 (92.7)"
+    ];
+
+    var nodeValues = [
+      10138419, 2775248, 1361715, 500079, 580640, 239569, 15595669, 
+      17565056, 14184904, 3380152, 8147010, 2360648, 2193575, 1361710, 121962,
+      2529614, 850538, 1400943, 86438, 1042234, 927154
+    ]
+
+    var nodeCustomData = [];
+    for (var i = 0; i < nodeLabels.length; i++) {
+      var label = nodeLabels[i];
+      var value = nodeValues[i];
+      var customDataStr ="數量: " + value + "";
+      nodeCustomData.push(customDataStr);
+    }
+
+    var data = [
+      {
+        type: "sankey",
+        arrangement: "fixed",
+        domain: {
+          x: [0, 1],
+          y: [0, 1],
+        },
+        node: {
+          label: nodeLabels,
+          color: [// node顏色
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "459645", //
+            "454F96",
+            "2A7104",
+            "2A7104",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue"
+          ],
+          x: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.25, 0.40, 0.57, 0.57, 0.99, 0.99, 0.99, 0.99, 0.99, 0.7, 0.99, 0.99, 0.99, 0.99, 0.01 ],
+          y: [0.2, 0.35, 0.45, 0.55, 0.65, 0.75, 0.6, 0.65, 0.5, 0.75, 0.05, 0.16, 0.25, 0.35, 0.45, 0.82, 0.55, 0.65, 0.75, 0.85, 0.85 ],
+          pad: 25,//數值越小越大
+          customdata: nodeCustomData, // 新增 customdata 屬性，放入整合後的名稱和數量陣列
+          hovertemplate: "<extra>%{label}<br>%{customdata}</extra>",
+
+        },
+        link: {
+          arrow: 15,//無功能
+          source: [0, 1, 2, 3, 4, 5, 6, 7, 7, 8, 8, 8, 8, 8, 9, 9, 15, 15, 15, 19, 20],
+          target: [6, 6, 6, 6, 6, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 7, 7],
+          value: [
+            10138419, 2775248, 1361715, 500079, 580640, 239569, 15595669, 
+            14184904, 3380152, 8147010, 2360648, 2193575, 1361710, 121962,
+            2529614, 850538, 1400943, 86438, 1042234, 1042234, 927154  
+          ],
+
+          color: [//flow 顏色
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "F0ECEA",
+            "FFA8A8",
+            "F0ECEA"
+          ],
+        },
+      },
+    ];
+
+
+    var layout = {
+      title: "2022 塑膠物質流",
+      font: {
+        size: 18,
+      },
+      height: 600, //圖面大小
+
+      //在圖片旁邊添加文字標註
+      annotations: [
+        {
+          x: 1.5, // x 座標，請根據您的需要調整位置
+          y: 0.5, // y 座標，請根據您的需要調整位置
+          xref: 'paper',
+          yref: 'paper',
+          xanchor: "left",
+          yanchor: "middle",
+          text: '單位：萬公噸', // 您要標註的文字內容
+          showarrow: false,
+        },
+      ],
+    };
+
+    //this is to be copy   
+
+    var nodeLabels2 = [
+        "塑膠原料 (531.2)", //0
+        "聚氯乙烯 (45.4)",
+        "聚乙烯 (114.3)",
+        "聚丙烯 (53.1)",
+        "聚苯乙烯 (12.8)",
+        "ＡＢＳ樹脂 (16.1)",
+        "聚胺基甲酸酯樹脂 (11.3)", //6
+        "不飽和聚酯樹脂 (2.1)",
+        "酚甲醛樹脂 (3.6)",
+        "環氧樹脂 (15.4)",
+        "聚酯粒 (195.4)",
+        "其他合成樹脂 (35.4)",
+        "聚醯胺 (26.2)", //12
+        "塑膠製品 (246.3)",//13
+        "2-塑膠原料 (102.8)", 
+        "合成纖維原料 (59.2)",
+        "人造纖維紡紗及織布 (18.6)", 
+        "其他電子零組件 (13.7)", 
+        "未分類其他製品 (7.2)",
+        "塗料、染料及顏料 (6.2)", 
+        "育樂用品 (5.9)", //20
+        "電線及配線器材 (5.7)", 
+        "其他紡織品 (5.6)",  
+        "印刷電路板 (4.6)",
+        "光電材料及元件 (4.4)", //24 
+        "其他紙製品 (4.0)",
+        "未分類其他化學製品 (3.9)",
+        "不織布 (3.8)"  //27
+    ];
+
+    var nodeValues2 = [
+      5312355, 454259, 1143487, 530972, 127684, 161404, 113109, 21485, 35886, 153778, 1954410, 353583, 262298,
+      2463283.747, 1027848.718, 591554.7098, 186167.692, 137068.8658, 71646.41094, 62485.99689, 58883.67382, 56721.92202,
+      55641.91611, 46099.29352, 44057.0856, 40178.38084, 39025.24683, 37819.20614
+    ]
+    var data2 = [
+      {
+        type: "sankey",
+        arrangement: "fixed",
+        domain: {
+          x: [0, 1],
+          y: [0, 1],
+        },
+        node: {
+          label: nodeLabels2,
+          color: [// node顏色
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "459645", //
+            "454F96",
+            "2A7104",
+            "2A7104",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+            "blue",
+          ],
+          pad: 35,//數值越小越大
+          customdata: nodeCustomData, // 新增 customdata 屬性，放入整合後的名稱和數量陣列
+          hovertemplate: "<extra>%{label}<br>%{customdata}</extra>",
+
+        },
+        link: {
+          arrow: 15,//無功能
+          source: [
+           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+           1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+          ],
+          target: [
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+          13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+          14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+          15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+          16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+          17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
+          18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
+          19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19,
+          20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
+          21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
+          22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+          23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,
+          24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
+          25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25,
+          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
+          27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27
+
+          ],
+          value: [
+          454259, 1143487, 530972, 127684, 161404, 113109, 21485, 35886, 153778, 1954410, 353583, 262298,
+          274850.9259, 950162.3073, 380874.4623, 97298.39178, 63378.08204, 49807.7542, 7506.779936, 1602.828295, 8084.295846,
+          535537.3434, 81797.55866, 12383.01787, 11756.79845, 2069.144042, 22716.90786, 10148.27215, 45840.92693, 24455.59687,
+          1959.150124, 12747.9622, 24752.6091, 806423.5479, 64977.80235, 0, 0, 0, 428.5092432, 0, 0, 0, 0, 0, 0, 531530.5445,
+          30295.47162, 29300.18449, 33.2539388, 0, 3355.654466, 0, 0, 0, 0, 69.67741423, 0, 10454.97107, 2604.667158, 169649.468,
+          108167.547, 0, 553.7355302, 140.6776767, 4380.646633, 0, 0, 0, 20048.96554, 0, 3777.29339, 0, 18685.94867, 4447.676923,
+          9053.106065, 23.16173864, 7828.091241, 6924.544599, 6126.139788, 146.2384713, 0, 7835.376215, 7051.564116, 3524.563114,
+          477.8061921, 2625.272916, 1847.805915, 2519.322533, 1685.936774, 2956.72188, 0, 217.355712, 34058.93542, 0, 16096.83955,
+          0, 3413.129018, 4316.359724, 16143.77463, 9887.828665, 2604.974576, 1949.222408, 2369.769157, 0, 13.05767267, 
+          9097.744546, 4583.04636, 4504.767057, 11414.65502, 39806.82678, 0, 0, 730.9796914, 0, 0, 239.8835302, 0, 2471.697413,
+          1924.75944, 133.1201439, 243.8622179, 17873.4363, 13829.85748, 0, 300.790822, 393.8769221, 9.452354424, 0, 0,
+          448.7112047, 3091.275519, 19450.65329, 0, 0, 6792.48917, 0, 0, 0, 0, 1519.826038, 36844.37087, 0, 942.6074358, 0,
+          0, 0, 0, 0, 8610.92782, 0, 0, 0, 0, 0, 35446.15777, 0, 0, 31116.17791, 2886.033967, 186.695209, 0, 0, 0, 0, 0, 0,
+          5989.47375, 0, 264.0507904, 1043.783208, 110.8683549, 0, 10.03533794, 1655.764253, 107.2226005, 2588.508934,
+          15070.79282, 0, 18174.22053, 0, 0, 6556.953649, 11979.88398, 31.80266182, 0 ,0, 0, 60.23864686, 53.6734078,
+          11327.47072, 1110.204087, 6698.978992
+          ],
+          color: [//flow 顏色
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA",
+            "FFA8A8","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA","F0ECEA"
+          ],
+        },
+      },
+    ];
+
+
+    var layout2 = {
+      title: "2022 塑膠原料流向",
+      font: {
+        size: 20,
+      },
+    };
+
+    /*var data2 = [
+      {
+        values: [45.7, 19.5, 11.0, 3.5, 2.7, 1.4, 1.3, 1.2, 1.0, 1.0, 1.0 ,0.9, 0.8, 0.7, 0.7, 7.6],
+        labels: [
+        "塑膠製品","2-塑膠原料", "合成纖維原料","人造纖維紡紗及織布", "其他電子零組件", "未分類其他製品",
+        "塗料、染料及顏料", "育樂用品", "其他紡織品", "電線及配線器材", "印刷電路板", "光電材料及元件", "未分類其他化學製品",
+        "其他紙製品", "不織布", "其他"
+        ],
+        type: "pie",
+      },
+    ];
+    var layout2 = {
+      title: "塑膠原料流向比例",
+      font: {
+        size: 20,
+      },
+      margin: {
+        t: 50, // 上邊距
+        r: 100, // 右邊距
+        b: -50, // 下邊距
+        l: 300, // 左邊距
+      },
+    };*/
+
+
+    Plotly.newPlot("myDiv", data, layout); //這條不能刪
+
+/*    var sankeyDiv = document.getElementById("myDiv");
+    sankeyDiv.on("plotly_click", function (data) {
+      for (var i = 0; i < data.points.length; i++) {
+        if (data.points[i].pointNumber == 7) {
+          alert("點擊查看國內塑膠原料流向。");
+          Plotly.newPlot("myDiv", data2, layout2);
+          //Plotly.newPlot("4import", data2pie, layout2pie);
+        }
+      }
+    });*/
+
+    // 獲取按鈕元素
+    var updateButton = document.getElementById("updateButton");
+    // 添加按鈕點擊事件
+    updateButton.addEventListener("click", function() {
+      alert("查看國內塑膠原料流向"); // 这里可以添加任何你想要执行的操作
+      Plotly.newPlot("myDiv", data2, layout2); // 更新图表
+        //Plotly.newPlot("4import", data2pie, layout2pie);
+    });
+
+  </script>
+      <footer>
+        <div>
+            <p>工業技術研究院 永續環境技術組 綠色材料與分析研究室</p>
+            <p>台南市歸仁區高發二路360號B棟316室 | 電話：06-363-6674</p>
+            <p></p>
+        </div>
+    </footer>
+</body>

@@ -1,0 +1,254 @@
+header {
+    background-image: url('https://d1di2lzuh97fh2.cloudfront.net/files/1k/1kv/1kvudr.jpg?ph=793b5686c3');
+    background-size: cover; /* 背景圖片覆蓋整個元素 */
+    background-position: center; /* 將背景圖片置中 */
+    background-repeat: no-repeat; /* 不重複顯示背景圖片 */
+    background-color: hsla(230, 46%, 95%, 0.961);
+    color: rgb(37, 37, 41);
+    padding: 5px;
+    text-align: center;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border: 1px solid #ccc;
+}
+nav {
+    margin-top: 15px;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 2vw;
+}
+header .logo-image {
+    flex-shrink: 0; /* 防止圖片縮小 */
+    margin-right: 110px; /* 調整圖片和標題之間的間距 */
+    margin-top: 10px; /* 調整圖片和標題之間的間距 */
+}
+nav ul li a {
+    color: #000;
+    text-decoration: none; /* 刪除連結下劃線 */
+}
+
+/* 滑鼠懸停時的連結樣式 */
+nav ul li a:hover {
+    color: #3228ca; /* 將連結顏色更改為紅色 */
+    text-decoration: underline; /* 添加底線 */
+}
+
+.background-bar {
+  background-color: #f1eeee;
+  padding: 5px 20px;
+  max-height: 80px; /* 设置最大高度，根据需要调整 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text {
+  flex-grow: 1;
+}
+
+.text h2, .text h3 {
+  display: block;
+  font-size: 18px;
+  margin: 0;
+}
+
+.button-container {
+  display: flex;
+}
+
+
+.button {
+  background-color: #b4ade9;
+  border: 2px solid #b4ade9;
+  border-radius: 5px;
+  margin-left: 10px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer; /* 鼠标指针显示为手型，表示可以点击 */
+}
+
+.button i {
+  margin-right: 5px;
+}
+
+.button img {
+  width: 24px; /* 设置图标宽度 */
+  height: 24px; /* 设置图标高度 */
+  margin-right: 5px; /* 设置图标与文本之间的间距 */
+  color: white;
+}
+.button span {
+  color: #000; /* 初始文本颜色 */
+}
+
+.button:hover {
+  background-color: #f0f0f0; /* 鼠标悬停时的背景颜色 */
+}
+
+#now-button {
+    background-color: #f0f0f0; /* 你想要的新颜色 */
+    border: 2px solid #b4ade9; /* 可选：更改边框颜色 */
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex-grow: 1;
+}
+
+footer {
+    flex-shrink: 0;
+    background-color: #0b0b0ce8;
+    color: #f1eeee;
+    text-align: center;
+    padding: 10px 0;
+}
+
+footer p {
+    margin: 0px 0;
+}
+
+#myDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    margin-top: 20px;
+}
+.middle{
+    display: flex;
+    justify-content: center;
+  }
+
+  .unit{
+    display: flex;
+    justify-content: flex-start;
+    margin-left: 1650px;
+    font-size: 20px;
+  }
+  .raw {
+    position: absolute;
+    background-color: #7aaee2;
+    color: white;
+    padding: 8px 15px;
+    font-size: 20px; 
+    z-index: 1;
+    text-decoration: none;
+    display: block;
+    top: 172px; left: 107px;
+  }
+  .back {
+    display: inline-block;
+    padding: 12px 20px;
+    font-size: 20px;
+    background-color: #d9e5ee;
+    color: #140b15;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s;
+  }
+
+  #updateButton {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 18px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s;
+  }
+  
+  #updateButton:hover {
+    background-color: #3e5866;
+  }
+  
+  /* 可選：按鈕不可用狀態樣式 */
+  #updateButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
+  /* 選單上字型調整*/ 
+  .dropbtn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 18px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+  }
+
+  /* Dropdown button on hover & focus */ 滑鼠點擊選單會產生的顏色
+  .dropbtn:hover,
+  .dropbtn:focus {
+    background-color: #b1bbc2;
+  }
+
+  /* The container <div> - needed to position the dropdown content */
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* Dropdown Content (Hidden by Default) */
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 70px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    font-size: 17px;
+    padding: 5px;
+  }
+
+  /* Links inside the dropdown */
+  .dropdown-content a {
+    color: black;
+    padding: 12px 0px;
+    text-decoration: none;
+    display: block;
+    text-align: center; 
+  }
+
+  /* Change color of dropdown links on hover */
+  .dropdown-content a:hover {
+    background-color: #ddd;
+  }
+
+  .nodeLabel {
+    font-size: 16px; /* 調整字體大小 */
+    text-align: center; /* 文字置中對齊 */
+    white-space: pre-line; /* 設置換行顯示 */
+  }
+
+  /* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+  .show {
+    display: block;
+  }
