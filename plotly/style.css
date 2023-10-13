@@ -39,7 +39,7 @@
         }
         header .logo-image {
             flex-shrink: 0; /* 防止圖片縮小 */
-            margin-right: 150px; /* 調整圖片和標題之間的間距 */
+            margin-right: 110px; /* 調整圖片和標題之間的間距 */
             margin-top: 10px; /* 調整圖片和標題之間的間距 */
         }
         nav ul li a {
