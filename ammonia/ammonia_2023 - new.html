@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+
+<html lang="zh-tw" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta charset="utf-8" />
+  <title>物質流總覽</title>
+  <script src="js/plotly-2.12.1.min.js"></script>
+  <!--jquery modal-->
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+  <script>
+    $(function () {
+      //$("#dialog").dialog();
+      $("#dialogFlow,#dialogNode,#myDivDefinition").dialog({
+        autoOpen: false,
+        width: 950,
+        height: 300
+      });
+      $("#myDivLine,#myDivPie").dialog({
+        autoOpen: false,
+        height: 600,
+        width: 950
+      });
+      init();
+    });
+  </script>
+</head>
+
+<body>
+  <header>
+    <div class="logo-image">
+      <div>
+        <picture>
+          <source type="image/webp"
+            srcset="https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000021-8102381026/450/itri_CEL_A.webp?ph=793b5686c3 450w, https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000021-8102381026/700/itri_CEL_A.webp?ph=793b5686c3 700w, https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000021-8102381026/itri_CEL_A.webp?ph=793b5686c3 721w"
+            sizes="(min-width: 600px) 450px, (min-width: 360px) calc(100vw * 0.8), 100vw"><img
+            src="https://793b5686c3.cbaul-cdnwnd.com/b03c2e59d8a11e2981158b740c9beb7b/200000020-60a5860a5b/itri_CEL_A.png?ph=793b5686c3"
+            alt="" width="240" height="56" class="wnd-logo-img">
+        </picture>
+      </div>
+    </div>
+    <h1>Material flow diagram</h1>
+    <nav>
+      <ul>
+        <li><!--<a href="https://hws-site.webnode.tw/">-->回首頁</a></li>
+        <li><a href="https://www.reca.gov.tw/">循環署網</a></li>
+        <li><a href="https://smmdb.moenv.gov.tw/SMM/WebPage/MF_index.aspx#section2">指標頁面</a></li>
+        <li><a href="https://smmdb.moenv.gov.tw/SMM/WebPage/enter.aspx">分析系統</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div class="background-bar">
+      <div class="text">
+        <h2><i class="fa-solid fa-puzzle-piece"></i> 主題: 液氨物質流布</h2>
+        <h3><i class="fab fa-unity"></i> 單位: 萬公噸</h3>
+      </div>
+      <div class="button-container">
+        <a style="text-decoration: none;">
+          <div class="button" id="now-button">
+            <img src="img/all.png" alt="液氨"> 液氨
+          </div>
+          <a href="" style="text-decoration: none;">
+            <div class="button">
+              <img src="img/plastics.png" alt="塑膠"> 塑膠
+            </div>
+          </a>
+          <a href="" style="text-decoration: none;">
+            <div class="button">
+              <img src="img/steel-beam.png" alt="金屬"> 金屬
+            </div>
+          </a>
+          <a href="" style="text-decoration: none;">
+            <div class="button">
+              <img src="img/biomass-energy.png" alt="生物質"> 生物質
+            </div>
+          </a>
+          <a href="" style="text-decoration: none;">
+            <div class="button">
+              <img src="img/sand.png" alt="無機資源"> 無機資源
+            </div>
+          </a>
+      </div>
+    </div>
+
+    <!--<div class="dropdown">
+      <button onclick="myFunction()" class="dropbtn">年度</button>
+      <div id="myDropdown" class="dropdown-content">
+        <a href="circular_economy_2022.html">2022</a>
+        <a href="circular_economy.html">2021</a>
+        <a href="twenty.html">2020</a>
+        <a href="nine.html">2019</a>
+        <a href="eight.html">2018</a>
+        <a href="seven.html">2017</a>
+        <a href="six.html">2016</a>
+        <a href="five.html">2015</a>
+        <a href="four.html">2014</a>
+        <a href="three.html">2013</a>
+        <a href="two.html">2012</a>
+      </div>
+    </div>-->
+
+    <div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
+    </div>
+    <div id="dialogNode" title="">
+      <table style="width:80%;">
+        <tr>
+          <td id="tdCollapse"><b style="cursor: pointer;"
+              onclick="closeDialog(); Plotly.newPlot('myDiv', data, layout); isExpand = false; init();">Collapse</b>
+          </td>
+          <td><img class="floating-img" src="img/line.png" width="300" height="200" title="歷年趨勢圖"
+              style="cursor: pointer;" onclick="closeDialog();$('#myDivLine').dialog('open');" /></td>
+          <td><img class="floating-img" src="img/pie.png" width="300" height="200" title="歷年比例" style="cursor: pointer;"
+              onclick="closeDialog();$('#myDivPie').dialog('open');" /></td>
+          <td><img class="floating-img" src="img/def.png" width="300" height="200" title="定義" style="cursor: pointer;"
+              onclick="closeDialog();$('#myDivDefinition').dialog('open');" /></td>
+        </tr>
+      </table>
+    </div>
+    <div id='myDivLine' title="Time graphs" style="width:900px;height:500px;">
+    </div>
+    <div id='myDivPie' title="Pie chart" style="width:600px;height:450px;">
+    </div>
+    <div id='myDivDefinition' title="Definition">
+      Material use includes metal ores, metals and non-metallic minerals,
+      as well as those fractions of fossil and biomass materials not used for energy provision.
+    </div>
+
+
+    <div class="flex-parent">
+      <div class="input-flex-container">
+        <div class="input">
+          <span data-year="2013"></span>
+        </div>
+        <div class="input">
+          <span data-year="2014"></span>
+        </div>
+        <div class="input">
+          <span data-year="2015"></span>
+        </div>
+        <div class="input">
+          <span data-year="2016"></span>
+        </div>
+        <div class="input">
+          <span data-year="2017"></span>
+        </div>
+        <div class="input">
+          <span data-year="2018"></span>
+        </div>
+        <div class="input">
+          <span data-year="2019"></span>
+        </div>
+        <div class="input">
+          <span data-year="2020"></span>
+        </div>
+        <div class="input">
+          <span data-year="2021"></span>
+        </div>
+        <div class="input active">
+          <span data-year="2022"></span>
+        </div>
+      </div>
+
+      <div id="remarks" class="remarks">
+        <a></a>
+      </div>
+
+      <div id="unit" class="unit">
+        <a></a>
+      </div>
+  </main>>
+
+  <script>
+    function myFunction() {
+      document.getElementById("myDropdown").classList.toggle("show");
+    }
+    // Close the dropdown menu if the user clicks outside of it
+    window.onclick = function (event) {
+      if (!event.target.matches(".dropbtn")) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains("show")) {
+            openDropdown.classList.remove("show");
+          }
+        }
+      }
+    };
+
+    var isExpand = false;
+    var isDetail = false;
+    var isHighlight = false;
+    var grayColor = "rgba(242, 242, 242, 0.8)";
+    var data = [{
+      type: "sankey",
+      arrangement: "fixed",
+      node: {
+        label: [
+          //0
+          "281414000000<br>液氨 (55.5)",
+          //1
+          "使用<br>(46.3)",
+          //2
+          "180357<br>液氨(46.3)",
+          //3
+          "廢棄物<br>(46.3)",
+          //4
+          "D-1599<br>(20.4)",
+          //5
+          "D-1504<br>(3.4)",
+          //6
+          "C-0202<br>(1.9)",
+          //7
+          "D-1503<br>(0.12)",
+          //8
+          "C-0201<br>(0.1)",
+          //9
+          "材料化<br>(25.9)",
+          //10
+          "180078<br>硫酸銨(5.8)",
+          //11
+          "181299<br>其他氫氧化物(1.0)",
+          //12
+          "其他再生產品<br>(0.5)",
+          //13
+          "再生產品銷售量<br>(7.3)",
+          //14
+          "硫酸銨<br>(5.7)",
+          //15
+          "其他氫氧化物<br>(1.0)",
+          //16
+          "其他再生產品<br>(0.5)",
+          //17
+          "化學材料製造業<br>(2.3)",
+          //18
+          "經銷/批發商<br>(2.6)",
+          //19
+          "電子零組件製造業<br>(1.0)",
+          //20
+          "化學製品製造業<br>(0.01)",
+          //21
+          "皮革、毛皮及其製品製造業<br>(0.04)",
+          //22
+          "輸出國外<br>(1.2)",
+        ],
+        x: [0.01, 0.1, 0.2, 0.3, 0.4, 0.4, 0.4, 0.4, 0.4, 0.5, 0.6, 0.6, 0.6, 0.73, 0.83, 0.83, 0.83, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99],
+        y: [0.3, 0.5, 0.5, 0.5, 0.1, 0.45, 0.63, 0.8, 0.95, 0.3, 0.1, 0.3, 0.5, 0.3, 0.1, 0.3, 0.5, 0.01, 0.2, 0.4, 0.6, 0.8, 0.99],
+        text: [
+          "236.2",
+          "93.8",
+          "330.1",
+          "417.6",
+          "67.2",
+          "112.0",
+          "238.4",
+          "143.7",
+          "94.7",
+          "1.0",
+          "6.2",
+          "87.5",
+        ],
+        pad: 20,// 10 Pixels
+        hovertemplate: '%{label} <extra></extra>',
+      },
+      link: {
+        source: [0, 1, 2, 3, 3, 3, 3, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10, 11, 12, 13, 13, 13, 14, 14, 14, 14, 14, 15, 15, 15, 16],
+        target: [1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 9, 9, 10, 11, 12, 13, 13, 13, 14, 15, 16, 17, 18, 20, 21, 22, 17, 19, 22, 17],
+        value: [463656.18, 463656.18, 463656.18, 203929, 33853.45, 18983, 1188, 931.84,
+          203929, 33853.45, 18983, 1188, 931.84, 57555.91, 10423.94, 5122.98, 57555.91, 10423.94, 5122.98,
+          57111.18, 10058.4, 5096.73, 17873.1, 26303, 102.6, 445.1, 12387.4, 17.94, 9968.46, 72, 5097.73
+        ],
+        color: [
+          "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA",
+          "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA",
+          "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA",
+          "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA", "F0ECEA",
+        ],
+        hovertemplate: 'Total:%{value}<extra></extra>'
+      }
+    }]
+
+
+    var layout = {
+      title: "2023 液氨物質流",
+      font: {
+        size: 18,
+      },
+      height: 450
+    };
+
+
+    Plotly.newPlot('myDiv', data, layout)
+
+    /*var myDiv = document.getElementById('myDiv');
+    var myDivLine = document.getElementById('myDivLine');
+    var myDivPie = document.getElementById('myDivPie');
+
+
+    myDiv.on('plotly_click', function (data) {
+      if (data.points.length > 0) {
+        var nodeName = data.points[0].label;
+
+        var indexOfLineBreak = nodeName.indexOf("<br>");
+        if (indexOfLineBreak !== -1) {
+          nodeName = nodeName.substring(0, indexOfLineBreak); // 截取換行符之前的部分
+        }
+
+        showLineChart(nodeName);
+        showPieChart(nodeName);
+        showDefinition(nodeName)
+      }
+    });
+
+    //折線圖樣式設計
+    function applyCommonStyle(trace) {
+      trace.line = {
+        color: "8CB1D5",
+        shape: "spline",
+        width: 3
+      };
+
+      trace.mode = "lines+markers";
+
+      trace.marker = {
+        size: 8,
+        line: {
+          color: "8CB1D5",
+          width: 2
+        },
+        opacity: 1.0,
+        symbol: "circle"
+      };
+    }
+    // 先定義每個節點對應的折線圖數據
+    var lineChartData = {
+      "進口": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          241556616, 250640208, 255546601, 253169026, 254087544, 255291925,
+          255546601, 245315669, 231061014, 248591834, 236241871
+        ],
+        type: "scatter",
+      },
+      "國內開採": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          99977935, 93498518, 95850463, 88647243, 80154146, 80877022, 81050781,
+          80092200, 93947317, 94562316, 93819612
+        ],
+        type: "scatter",
+      },
+      "直接物質投入": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          341534551, 344138726, 352005878, 341816269, 334241690, 336168947, 336597382,
+          325407869, 325008331, 343154150, 330061482.6
+        ],
+        type: "scatter",
+      },
+      "製程物質投入": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          414132664, 417694504, 427728948, 412608976, 395631787, 401976709, 411186577,
+          409457745, 415896568, 441469807, 417572493.6
+        ],
+        type: "scatter",
+      },
+      "出口": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          70438854, 74285652, 76631038, 74941247, 75208593, 78137736, 79198330, 78076174,
+          67803144, 72699884, 67174311
+        ],
+        type: "scatter",
+      },
+      "排出至環境": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          107392238, 108857873, 110040676, 109292902, 112442682, 118623683, 118309691,
+          112457364, 107049217, 116212230, 112028831
+        ],
+        type: "scatter",
+      },
+      "國內物質使用": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          236301572, 234550979, 241057234, 228374827, 207980512, 205215290, 213678556,
+          218924207, 241044207, 252557693, 238369351.6
+        ],
+        type: "scatter",
+      },
+      "庫存": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          155974661.5, 153074506, 157522781.2, 149934841.6, 138991555.2, 131882464.4, 131329604.7,
+          127434248.1, 142793368.1, 146929491, 143676151.8
+        ],
+        type: "scatter",
+      },
+      "廢棄產出": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          80326910.46, 81476473.05, 83534452.77, 78439985.41, 68988956.84, 73332825.59, 82348951.26,
+          91489958.88, 98250838.95, 105628202, 94693199.8
+        ],
+        type: "scatter",
+      },
+      "掩埋": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          1323810, 1570782, 1516904, 1112890, 1206701, 1258209, 1315979, 912516, 904075, 957135, 1017064
+        ],
+        type: "scatter",
+      },
+      "焚化": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          6404987.455, 6349913.045, 6294478.774, 6534388.412, 6392158.841, 6266854.59,
+          6443777.26, 6527566.88, 6458526.95, 6355410.04, 6165124.8
+        ],
+        type: "scatter",
+      },
+      "回收再利用": {
+        x: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022],
+        y: [
+          72598113, 73555778, 75723070, 70792707, 61390097, 65807762, 74589195, 84049876, 90888237, 98315657, 87511011
+        ],
+        type: "scatter",
+      }
+    }
+    for (var traceKey in lineChartData) {
+      if (lineChartData.hasOwnProperty(traceKey)) {
+        var trace = lineChartData[traceKey];
+        applyCommonStyle(trace);
+      }
+    }
+
+    //圓餅圖樣式設計        
+    var commonPieChartStyle = {
+      type: "pie",
+      textinfo: "percent+label",
+      marker: {
+        colors: ["#283593", "#FFB300", "#388E3C", "#E65100"],
+        line: {
+          color: "white",
+          width: 2,
+        },
+      },
+      hoverinfo: "label+percent",
+      textposition: "outside",
+      automargin: true,
+      hole: 0.7,
+    };
+
+    // 先定義每個節點對應的圓餅圖數據
+    var pieChartData = {
+      "進口": {
+        values: [21236004, 40149503, 27805349, 147051015],
+        labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 236,241,871公噸",
+      },
+      "國內開採": {
+        values: [10607651, 83052110, 159851],
+        labels: ["生物質", "非金屬", "化石燃料"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 93,819,612公噸"
+      },
+      "直接物質投入": {
+        values: [31843655, 40149503, 110857459, 147210866],
+        labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 330,061,483公噸"
+      },
+      "製程物質投入": {
+        values: [330061483, 87511011],
+        labels: ["直接物質投入", "回收再利用"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 417,572,494公噸"
+      },
+      "出口": {
+        values: [4656478, 20100261, 3784102, 38633470],
+        labels: ["生物質", "金屬", "非金屬", "化石燃料"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 67,174,311公噸"
+      },
+      "排出至環境": {
+        values: [],
+        labels: [],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "無"
+      },
+      "國內物質使用": {
+        values: [],
+        labels: [],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "無"
+      },
+      "庫存": {
+        values: [],
+        labels: [],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "無"
+      },
+      "廢棄產出": {
+        values: [87511011, 6165124.80, 1017064],
+        labels: ["回收再利用", "焚化", "掩埋"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 94,693,200 公噸"
+      },
+      "掩埋": {
+        values: [567064, 450000],
+        labels: ["一般廢棄物", "事業廢棄物"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 1,017,064公噸"
+      },
+      "焚化": {
+        values: [],
+        labels: [],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "無"
+      },
+      "回收再利用": {
+        values: [7255577, 18315751, 4848703, 1928007, 53340000, 1822973],
+        labels: ["一般廢棄物", "事業廢棄物", "農業資材", "紙類", "營建剩餘土石方", "煉鋼爐石"],
+        ...commonPieChartStyle, // 引用通用樣式變數
+        totalText: "總量: 87,511,011公噸"
+      },
+    }
+
+
+    function showLineChart(nodeName) {
+
+      var chartData = lineChartData[nodeName]; // 使用對應節點的折線圖數據
+      var layout = {
+        title: nodeName + "歷年趨勢圖",
+        font: {
+          color: "white", // 將字體顏色設定為白色
+          size: 18,
+        },
+        plot_bgcolor: "rgba(0, 0, 0, 0)", // 將背景顏色設定為透明
+        paper_bgcolor: "rgba(50, 50, 50, 0.8)", // 將紙張背景顏色設定為黑色
+        xaxis: {
+          color: "white", // 將 x 軸字體顏色設定為白色
+          linecolor: "white", // x 軸線條顏色為白色
+          linewidth: 1, // x 軸線條寬度
+          gridcolor: "rgba(255, 255, 255, 0.1)", // 設定格線顏色
+          gridwidth: 0.5, // 設定格線寬度
+          dtick: 1, //刻度間距的值，這裡設定為 1
+        },
+        yaxis: {
+          color: "white", // 將 y 軸字體顏色設定為白色
+          linecolor: "white", // y 軸線條顏色為白色
+          linewidth: 1, // y 軸線條寬度
+          gridcolor: "rgba(255, 255, 255, 0.1)", // 設定格線顏色
+          gridwidth: 0.5, // 設定格線寬度
+        },
+      };
+
+      Plotly.react('myDivLine', [chartData], layout); // 更新折線圖
+    }
+
+    function showPieChart(nodeName) {
+      var chartData2 = pieChartData[nodeName]; // 使用對應節點的折線圖數據
+      var layout2 = {
+        title: nodeName + "圓餅圖",
+        font: {
+          size: 20,
+        },
+        showlegend: true, // 顯示圖例
+        legend: {
+          x: 1, // 圖例位置
+          y: 1.1,
+          font: {
+            size: 20,
+          }
+        },
+        paper_bgcolor: "white", // 背景顏色
+        margin: {
+          l: 50,
+          r: 50,
+          t: 100,
+          b: 50,
+        },
+        annotations: [{
+          font: {
+            size: 19,
+          },
+          showarrow: false,
+          text: chartData2.totalText, // 使用特定 "總數" 文字
+          x: 0.5,
+          y: 0.5,
+        }],
+      };
+
+      Plotly.react('myDivPie', [chartData2], layout2); // 更新圓餅圖
+    }*/
+
+    var customData = {
+      //0
+      "進口": "「進口」 指的是來自其他國家的原料或貨品進入我國的經濟活動。",
+      //1
+      "國內開採": "「國內開採」指的是從我國自然環境中提取的材料總量，以進一步在經濟中加工使用。",
+      //2
+      "直接物質投入": "「直接物質投入(DMI)」指的是進入經濟體的物質直接投入。直接物質投入 DMI包括所有有經濟價值且可用於生產和消費活動的物質，並且它的計算方式為國內開採量加上實際進口量的總和。",
+      //3
+      "製程物質投入": "「製程物質投入」定義為DMI和二次物料輸入(即來自回收和再生的物料)的總和。",
+      //4
+      "出口": "「出口」指的是從我國銷售至其他國家的貨物。",
+      //5
+      "排出至環境": "「排出至環境」指的是國家經濟體所釋放的液體和氣體物質總量（不包括水和呼吸產生二氧化碳），這些物質被自然環境，特別是大氣所吸收。",
+      //6
+      "國內物質使用": "「國內物質使用」包括生物質、金屬、非金屬以及化石燃料中未用於能源供應的部分。",
+      //7
+      "庫存": "「庫存」指的是經濟體的實質增長，每年都會有物料加入經濟體庫存中，而隨著建築物拆除和耐用消費品報廢，舊物料會被從庫存中移除。",
+      //8
+      "廢棄產出": "「廢棄產出」指的是從經濟活動中廢棄產出而來的廢棄物或資源。<br><br>廢棄產出 94.7 = 一般廢棄物 11.2 + 事業廢棄物 21.1 + 其他（營建剩餘土石方＋農業資材＋煉鋼爐石＋紙類） 62.4",
+      //9
+      "掩埋": "「掩埋」 指的是來自一般廢棄物和事業廢棄物的掩埋量。",
+      //10
+      "焚化": "「焚化」 指的是來自一般廢棄物和事業廢棄物的垃圾焚化量。",
+      //11
+      "回收再利用": "「回收再利用」是指將廢棄物重新加工成產品、材料或物質的任何作法，無論是回歸原來的用途還是其他用途。它包括有機物料的再加工，但不包括能源回收和重新加工成燃料或用於填埋的材料。納入計算之種類包括：一般廢棄物、事業廢棄物、農業資材、紙類、營建剩餘土石方及煉鋼爐石回收量。",
+    }
+
+    function showDefinition(nodeName, nodeDefinition) {
+      var definition = customData[nodeName]; // 使用修改後的 customData 對象
+      $("#myDivDefinition").html(definition);
+      $("#myDivDefinition").css("font-size", "25px");
+
+    }
+
+
+
+    // #endregion 
+
+
+    /*function closeDialog() {
+      $('#dialogFlow').dialog('close');
+      $('#dialogNode').dialog('close');
+    }*/
+    function init() {
+      var myPlot = document.getElementById('myDiv')
+
+      myPlot.on('plotly_click', function (data) {
+        console.log(data);
+        closeDialog();
+        if (data.points.length > 0) {
+          if (data.points[0].flow) {
+
+            $("#dialogFlow").dialog({ title: data.points[0].target.label });
+
+            if (isDetail == false) {
+              $("#tdDetail").show();
+              $("#tdHideDetail").hide();
+
+              $("#tdNoHighlight").hide();
+              $("#tdHighlight").hide();
+            }
+            else {
+              $("#tdHideDetail").show();
+              $("#tdDetail").hide();
+
+              if (isHighlight == false) {
+                $("#tdHighlight").show();
+                $("#tdNoHighlight").hide();
+
+              }
+              else {
+                $("#tdNoHighlight").show();
+                $("#tdHighlight").hide();
+              }
+
+            }
+
+
+
+            $("#dialogFlow").dialog("open");
+          }
+          else {
+            var nodeName = data.points[0].label;
+
+            var indexOfLineBreak = nodeName.indexOf("<br>");
+            if (indexOfLineBreak !== -1) {
+              nodeName = nodeName.substring(0, indexOfLineBreak); // 截取換行符之前的部分
+            }
+
+            // 根據節點數值動態設定對話框的標題
+            $("#dialogNode").dialog(({ title: nodeName }));
+            if (data.points[0].label == 'Exports 0.72') {
+              if (isExpand == false) {
+                $("#tdExpand").show();
+                $("#tdCollapse").hide();
+
+              }
+              else {
+                $("#tdCollapse").show();
+                $("#tdExpand").hide();
+              }
+            }
+            else {
+              $("#tdExpand").hide();
+              $("#tdCollapse").hide();
+            }
+            $("#dialogNode").dialog("open");
+          }
+
+        }
+      });
+    }
+    $(function () {
+      var inputs = $(".input");
+
+      inputs.click(function () {
+        var year = $(this).find("span").data("year");
+        // 根據所選年份跳到不同的HTML文件
+        window.location.href = `circular_economy_${year}.html`; // 例如，如果點擊 2022 年，將跳到 circular_economy_2022.html
+      });
+    });
+
+
+  </script>
+  <footer>
+    <div>
+      <p>工業技術研究院 永續環境技術組 綠色材料與分析研究室</p>
+      <p>台南市歸仁區高發二路360號B棟316室 | 電話：06-363-6674</p>
+      <p></p>
+    </div>
+  </footer>
+
+
+</body>
+
+</html>
