@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資源循環指標趨勢儀表板</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        header {
+
+            background-color: #0a6474;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 2rem;
+            font-weight: bold
+        }
+
+        footer {
+            flex-shrink: 0;
+            background-color: #0b0b0ce8;
+            color: #f1eeee;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        footer p {
+            margin: 0px 0;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            margin-bottom: 50px;
+            /* 預留空間給footer */
+            width: 100%;
+            max-width: 1400px;
+            /* 增加最大寬度 */
+            margin-left: auto;
+            /* 使內容水平置中 */
+            margin-right: auto;
+            /* 使內容水平置中 */
+        }
+
+        .buttons {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 100%;
+            /* 確保按鈕和報表寬度一致 */
+        }
+
+
+        .buttons button {
+            flex: 1;
+            padding: 20px 30px;
+            margin: 5px;
+            background: linear-gradient(135deg, #6e3bbc, #9c4dcc);
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            min-width: 200px;
+        }
+
+        .buttons button:hover {
+            background: linear-gradient(135deg, #8e4dcc, #b64fdc);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .iframe-container {
+            display: none;
+            width: 100%;
+            height: 80vh;
+            /* 使用相對高度來適應不同的螢幕 */
+            border: none;
+            margin-left: auto;
+            margin-right: auto;
+            background-color: #fff;
+        }
+
+        .iframe-container.active {
+            display: block;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        @media (min-width: 768px) {
+            .buttons button {
+                max-width: 300px;
+                /* 中等以上螢幕上的最大按鈕寬度 */
+            }
+        }
+
+        @media (min-width: 1400px) {
+            .iframe-container {
+                height: 85vh;
+                /* 在更大螢幕上增加 iframe 高度 */
+            }
+        }
+    </style>
+    <script>
+        function showIframe(id) {
+            document.querySelectorAll('.iframe-container').forEach(function (iframe) {
+                iframe.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        資源循環指標趨勢儀表板
+    </header>
+
+    <div class="content">
+        <div class="buttons">
+            <button onclick="showIframe('iframe1')">生產與消費</button>
+            <button onclick="showIframe('iframe2')">廢棄物產出</button>
+            <button onclick="showIframe('iframe3')">回收利用</button>
+            <button onclick="showIframe('iframe4')">創新與永續</button>
+        </div>
+        <div id="iframe1" class="iframe-container active">
+            <iframe title="數據儀錶板"
+                src="https://app.powerbi.com/view?r=eyJrIjoiZTVhMzdkZjktYmM2Ny00ODJmLTk3MmEtZjJjNjVmNmJjYzY0IiwidCI6IjczZmZlMzIyLTNhOGMtNGQxYy05MzZkLTY2NTY3NmY1NTlhYSIsImMiOjEwfQ%3D%3D&pageName=7a0d4505597cf7bffad4"
+                allowFullScreen="true"></iframe>
+        </div>
+        <div id="iframe2" class="iframe-container">
+            <iframe title="廢棄物產出"
+                src="https://app.powerbi.com/view?r=eyJrIjoiZTVhMzdkZjktYmM2Ny00ODJmLTk3MmEtZjJjNjVmNmJjYzY0IiwidCI6IjczZmZlMzIyLTNhOGMtNGQxYy05MzZkLTY2NTY3NmY1NTlhYSIsImMiOjEwfQ%3D%3D&pageName=cf26fb2f8f2107155794"
+                allowFullScreen="true"></iframe>
+        </div>
+        <div id="iframe3" class="iframe-container">
+            <iframe title="數據儀錶板"
+                src="https://app.powerbi.com/view?r=eyJrIjoiZTVhMzdkZjktYmM2Ny00ODJmLTk3MmEtZjJjNjVmNmJjYzY0IiwidCI6IjczZmZlMzIyLTNhOGMtNGQxYy05MzZkLTY2NTY3NmY1NTlhYSIsImMiOjEwfQ%3D%3D&pageName=bd9ee2297de320df2815"
+                allowFullScreen="true"></iframe>
+        </div>
+        <div id="iframe4" class="iframe-container">
+            <iframe title="廢棄物產出"
+                src="https://app.powerbi.com/view?r=eyJrIjoiZTVhMzdkZjktYmM2Ny00ODJmLTk3MmEtZjJjNjVmNmJjYzY0IiwidCI6IjczZmZlMzIyLTNhOGMtNGQxYy05MzZkLTY2NTY3NmY1NTlhYSIsImMiOjEwfQ%3D%3D&pageName=6e621a8a8b9d4f454596"
+                allowFullScreen="true"></iframe>
+        </div>
+    </div>
+
+    <footer>
+        <div>
+            <p>工業技術研究院 永續環境技術組 綠色材料與分析研究室</p>
+            <p>台南市歸仁區高發二路360號B棟316室 | 電話：06-363-6674</p>
+            <p></p>
+        </div>
+    </footer>
+</body>
+
+</html>
