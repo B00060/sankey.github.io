@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球循環經濟指標動態觀測站 - Taiwan Focused Edition</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 相關庫 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 D3.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --sidebar-width: 420px;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        .map-path {
+            transition: fill 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-up {
+            animation: fadeInUp 0.5s cubic-bezier(0, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes pulse-blue {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 20px rgba(37, 99, 235, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+            }
+        }
+
+        .ai-pulse {
+            animation: pulse-blue 2s infinite;
+        }
+
+        .bubble-tip::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            right: 24px;
+            border-width: 8px 8px 0;
+            border-style: solid;
+            border-color: #1e293b transparent transparent;
+        }
+
+        #map-container svg {
+            cursor: grab;
+        }
+
+        #map-container svg:active {
+            cursor: grabbing;
+        }
+
+        .region-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body class="overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- 國家資料庫 ---
+        const COUNTRIES_DB = [
+            { id: 'TWN', name: '台灣', region: '亞洲', type: '已開發' },
+            { id: 'DEU', name: '德國', region: '歐洲', type: '已開發' },
+            { id: 'JPN', name: '日本', region: '亞洲', type: '已開發' },
+            { id: 'NLD', name: '荷蘭', region: '歐洲', type: '已開發' },
+            { id: 'USA', name: '美國', region: '美洲', type: '已開發' },
+            { id: 'KOR', name: '南韓', region: '亞洲', type: '已開發' },
+            { id: 'SGP', name: '新加坡', region: '亞洲', type: '已開發' },
+            { id: 'FRA', name: '法國', region: '歐洲', type: '已開發' },
+            { id: 'GBR', name: '英國', region: '歐洲', type: '已開發' },
+            { id: 'CAN', name: '加拿大', region: '美洲', type: '已開發' },
+            { id: 'AUS', name: '澳洲', region: '大洋洲', type: '已開發' },
+            { id: 'ITA', name: '義大利', region: '歐洲', type: '已開發' },
+            { id: 'CHE', name: '瑞士', region: '歐洲', type: '已開發' },
+            { id: 'SWE', name: '瑞典', region: '歐洲', type: '已開發' },
+            { id: 'NOR', name: '挪威', region: '歐洲', type: '已開發' },
+            { id: 'DNK', name: '丹麥', region: '歐洲', type: '已開發' },
+            { id: 'CHN', name: '中國', region: '亞洲', type: '新興市場' },
+            { id: 'IND', name: '印度', region: '亞洲', type: '開發中' },
+            { id: 'BRA', name: '巴西', region: '美洲', type: '新興市場' },
+            { id: 'VNM', name: '越南', region: '亞洲', type: '開發中' },
+            { id: 'IDN', name: '印尼', region: '亞洲', type: '開發中' },
+            { id: 'THA', name: '泰國', region: '亞洲', type: '新興市場' },
+            { id: 'MEX', name: '墨西哥', region: '美洲', type: '新興市場' },
+            { id: 'ZAF', name: '南非', region: '非洲', type: '新興市場' },
+            { id: 'TUR', name: '土耳其', region: '歐洲', type: '新興市場' },
+            { id: 'POL', name: '波蘭', region: '歐洲', type: '已開發' },
+            { id: 'ESP', name: '西班牙', region: '歐洲', type: '已開發' },
+            { id: 'PHL', name: '菲律賓', region: '亞洲', type: '開發中' },
+            { id: 'MYS', name: '馬來西亞', region: '亞洲', type: '新興市場' },
+            { id: 'ARG', name: '阿根廷', region: '美洲', type: '新興市場' },
+            { id: 'CHL', name: '智利', region: '美洲', type: '新興市場' }
+        ];
+
+        const INDICATORS = [
+            { id: 'res_prod', name: '資源生產力', unit: '$/kg', color: d3.interpolateGreens },
+            { id: 'dmc_pc', name: '人均物質消費量', unit: 't/人', color: d3.interpolateOranges },
+            { id: 'recycle_rate', name: '資源回收率', unit: '%', color: d3.interpolateBlues },
+            { id: 'waste_gen', name: '廢棄物產生量', unit: 'kg/人', color: d3.interpolateReds }
+        ];
+
+        const YEARS = ['2024', '2023', '2022', '2021', '2020'];
+
+        const REGION_COLORS = {
+            '亞洲': 'bg-blue-100 text-blue-700',
+            '歐洲': 'bg-purple-100 text-purple-700',
+            '美洲': 'bg-orange-100 text-orange-700',
+            '非洲': 'bg-amber-100 text-amber-700',
+            '大洋洲': 'bg-emerald-100 text-emerald-700'
+        };
+
+        const Sparkline = ({ data, color }) => {
+            const width = 100;
+            const height = 35;
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const points = data.map((d, i) => ({
+                x: (i / (data.length - 1)) * width,
+                y: height - ((d - min) / (max - min || 1)) * (height - 4) - 2
+            }));
+            const pathData = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
+            return (
+                <svg width={width} height={height} className="overflow-visible">
+                    <path d={pathData} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="3" fill={color} />
+                </svg>
+            );
+        };
+
+        const App = () => {
+            const [selectedYear, setSelectedYear] = useState('2024');
+            const [selectedIndicator, setSelectedIndicator] = useState(INDICATORS[0]);
+            const [selectedRegion, setSelectedRegion] = useState('全球');
+            const [selectedType, setSelectedType] = useState('全部');
+            const [hoveredCountry, setHoveredCountry] = useState(null);
+
+            const [isChatOpen, setIsChatOpen] = useState(false);
+            const [showAIBubble, setShowAIBubble] = useState(true);
+            const [chatMessages, setChatMessages] = useState([
+                { role: 'ai', text: '您好！我是循環經濟顧問。我可以為您生成當前指標的深度分析報告。' }
+            ]);
+            const [chatInput, setChatInput] = useState('');
+
+            const mapRef = useRef(null);
+            const svgRef = useRef(null);
+            const zoomRef = useRef(null);
+            const chatEndRef = useRef(null);
+
+            const fullData = useMemo(() => {
+                const store = {};
+                INDICATORS.forEach(ind => {
+                    store[ind.id] = {};
+                    COUNTRIES_DB.forEach(c => {
+                        let base = ind.id === 'recycle_rate' ? 35 : ind.id === 'res_prod' ? 1.8 : 12;
+                        if (c.type === '已開發') base *= 1.8;
+                        let currentVal = base + (Math.random() * base);
+                        const trend = [];
+                        for (let i = 0; i < 5; i++) {
+                            currentVal += (Math.random() - 0.4) * (base * 0.12);
+                            trend.push(parseFloat(currentVal.toFixed(2)));
+                        }
+                        store[ind.id][c.id] = trend.reverse();
+                    });
+                });
+                return store;
+            }, []);
+
+            const currentYearIdx = YEARS.indexOf(selectedYear);
+            const currentValues = useMemo(() => {
+                const map = {};
+                Object.keys(fullData[selectedIndicator.id]).forEach(cid => {
+                    map[cid] = fullData[selectedIndicator.id][cid][currentYearIdx];
+                });
+                return map;
+            }, [selectedIndicator, selectedYear, fullData]);
+
+            // --- 修改後的排行榜邏輯 ---
+            const topRanking = useMemo(() => {
+                const processedList = COUNTRIES_DB.map(c => ({
+                    ...c,
+                    val: currentValues[c.id] || 0,
+                    history: fullData[selectedIndicator.id][c.id] || [0, 0, 0, 0, 0]
+                }))
+                    .filter(c => selectedRegion === '全球' || c.region === selectedRegion)
+                    .filter(c => selectedType === '全部' || c.type === selectedType)
+                    .sort((a, b) => b.val - a.val);
+
+                // 提取台灣
+                const taiwan = processedList.find(c => c.id === 'TWN');
+                // 排除台灣後取 Top 10
+                const othersTop10 = processedList.filter(c => c.id !== 'TWN').slice(0, 10);
+
+                // 組合成最終列表：台灣最前，接著 Top 10
+                const finalResult = [];
+                if (taiwan) finalResult.push({ ...taiwan, isSpecial: true });
+                return [...finalResult, ...othersTop10];
+            }, [currentValues, selectedRegion, selectedType, selectedIndicator, fullData]);
+
+            useEffect(() => {
+                if (!mapRef.current) return;
+                const width = mapRef.current.clientWidth;
+                const height = mapRef.current.clientHeight || 600;
+                d3.select(mapRef.current).selectAll("*").remove();
+                const svg = d3.select(mapRef.current).append("svg").attr("width", width).attr("height", height).attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
+                svgRef.current = svg;
+                const g = svg.append("g");
+                const projection = d3.geoMercator().scale(width / 6).translate([width / 2.1, height / 1.45]);
+                const pathGenerator = d3.geoPath().projection(projection);
+                const vals = Object.values(currentValues);
+                const colorScale = d3.scaleSequential(selectedIndicator.color).domain([d3.min(vals), d3.max(vals)]);
+
+                const zoom = d3.zoom().scaleExtent([1, 8]).translateExtent([[0, 0], [width, height]]).on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                    g.selectAll("path").attr("stroke-width", 0.8 / event.transform.k);
+                });
+                zoomRef.current = zoom;
+                svg.call(zoom);
+
+                d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(worldData => {
+                    g.selectAll("path").data(worldData.features).enter().append("path")
+                        .attr("d", pathGenerator)
+                        .attr("class", "map-path")
+                        .attr("fill", d => {
+                            const v = currentValues[d.id];
+                            return v ? colorScale(v) : "#e2e8f0";
+                        })
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 0.8)
+                        .on("mouseover", (e, d) => {
+                            const v = currentValues[d.id];
+                            if (v) {
+                                setHoveredCountry({ name: d.properties.name, val: v, id: d.id });
+                                d3.select(e.currentTarget).attr("stroke", "#64748b").attr("stroke-width", 1.5 / (d3.zoomTransform(svg.node()).k || 1)).raise();
+                            }
+                        })
+                        .on("mouseleave", (e) => {
+                            setHoveredCountry(null);
+                            d3.select(e.currentTarget).attr("stroke", "#fff").attr("stroke-width", 0.8 / (d3.zoomTransform(svg.node()).k || 1));
+                        });
+                });
+            }, [selectedIndicator, selectedYear, currentValues]);
+
+            const resetZoom = () => {
+                if (svgRef.current && zoomRef.current) {
+                    svgRef.current.transition().duration(750).call(zoomRef.current.transform, d3.zoomIdentity);
+                }
+            };
+
+            const handleSend = (q = chatInput) => {
+                if (!q.trim()) return;
+                setChatMessages(prev => [...prev, { role: 'user', text: q }]);
+                setChatInput('');
+                setTimeout(() => {
+                    setChatMessages(prev => [...prev, { role: 'ai', text: "正在為您交叉分析該區域與全球平均值的差異... 數據表明，推廣循環設計能有效降低人均物質消費量。" }]);
+                }, 600);
+            };
+
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+                if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }, [isChatOpen, chatMessages]);
+
+            useEffect(() => {
+                const timer = setTimeout(() => setShowAIBubble(false), 8000);
+                return () => clearTimeout(timer);
+            }, []);
+
+            return (
+                <div className="flex flex-col h-screen bg-slate-50">
+                    <header className="h-16 flex-shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-30 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                                <i data-lucide="bar-chart-3" className="w-6 h-6"></i>
+                            </div>
+                            <h1 className="text-xl font-black text-slate-800 tracking-tight">全球循環經濟指標 <span className="text-blue-600">觀測站</span></h1>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            {YEARS.map(y => (
+                                <button key={y} onClick={() => setSelectedYear(y)}
+                                    className={`px-5 py-1.5 rounded-lg text-sm font-bold transition-all ${selectedYear === y ? 'bg-white shadow-md text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}>
+                                    {y}
+                                </button>
+                            ))}
+                        </div>
+                    </header>
+
+                    <div className="flex flex-1 overflow-hidden">
+                        <aside className="w-[440px] flex-shrink-0 bg-white border-r border-slate-200 flex flex-col z-20">
+                            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <i data-lucide="medal" className="text-amber-500 w-5 h-5"></i>
+                                    領先表現對照表
+                                </h2>
+                                <p className="text-xs text-slate-500 mt-1 font-medium italic">最上方固定呈現臺灣，下方為 {selectedIndicator.name} 前 10 名</p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                {topRanking.map((c, i) => (
+                                    <div key={c.id} className={`group flex flex-col p-4 rounded-2xl transition-all duration-300 card-shadow animate-fade-up ${c.id === 'TWN' ? 'bg-blue-50 border-2 border-blue-400 ring-4 ring-blue-50' : 'bg-white border border-slate-100 hover:border-blue-400 hover:shadow-xl'}`} style={{ animationDelay: `${i * 50}ms` }}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${c.id === 'TWN' ? 'bg-blue-600 text-white' :
+                                                    i === (topRanking.some(item => item.id === 'TWN') ? 1 : 0) ? 'bg-amber-100 text-amber-600 border border-amber-200' :
+                                                        'bg-slate-50 text-slate-400'
+                                                    }`}>
+                                                    {c.id === 'TWN' ? <i data-lucide="star" className="w-4 h-4 fill-white"></i> : i}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-bold text-slate-800 text-md leading-none">{c.name}</h3>
+                                                        {c.id === 'TWN' && <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">FOCUS</span>}
+                                                    </div>
+                                                    <div className="flex gap-2 mt-2">
+                                                        <span className={`region-badge ${REGION_COLORS[c.region]}`}>{c.region}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{c.type}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className={`text-xl font-black mono ${c.id === 'TWN' ? 'text-blue-700' : 'text-blue-600'}`}>{c.val}</div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{selectedIndicator.unit}</div>
+                                            </div>
+                                        </div>
+                                        <div className={`flex items-center justify-between pt-3 border-t ${c.id === 'TWN' ? 'border-blue-200' : 'border-slate-50'}`}>
+                                            <span className={`text-[10px] font-black mono tracking-widest ${c.id === 'TWN' ? 'text-blue-400' : 'text-slate-300'}`}>5-YEAR TREND</span>
+                                            <Sparkline data={c.history} color={c.id === 'TWN' ? '#1d4ed8' : (i < 4 ? '#2563eb' : '#94a3b8')} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </aside>
+
+                        <main className="flex-1 relative bg-slate-50" id="map-container">
+                            <div className="absolute top-6 left-6 right-6 z-10 flex flex-col gap-4 pointer-events-none">
+                                <div className="flex justify-between w-full items-start">
+                                    <div className="flex gap-2 p-1.5 bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-white pointer-events-auto">
+                                        {INDICATORS.map(ind => (
+                                            <button key={ind.id} onClick={() => setSelectedIndicator(ind)}
+                                                className={`px-5 py-2 rounded-xl text-xs font-black transition-all ${selectedIndicator.id === ind.id ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}>
+                                                {ind.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-3 pointer-events-auto">
+                                        <div className="bg-white/95 backdrop-blur p-4 rounded-2xl shadow-xl border border-white min-w-[200px]">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase mono">圖例範圍</span>
+                                            </div>
+                                            <div className="h-2 rounded-full mb-1" style={{ background: `linear-gradient(to right, ${selectedIndicator.color(0)}, ${selectedIndicator.color(1)})` }} />
+                                            <div className="flex justify-between mono text-[10px] font-bold text-slate-400">
+                                                <span>MIN</span>
+                                                <span>MAX</span>
+                                            </div>
+                                        </div>
+                                        <button onClick={resetZoom} className="w-12 h-12 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-all active:scale-95">
+                                            <i data-lucide="maximize" className="w-5 h-5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 pointer-events-auto">
+                                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-lg border border-slate-100">
+                                        <i data-lucide="map-pin" className="w-3.5 h-3.5 text-blue-500"></i>
+                                        <select value={selectedRegion} onChange={e => setSelectedRegion(e.target.value)} className="bg-transparent text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                            <option>全球</option><option>亞洲</option><option>歐洲</option><option>美洲</option><option>非洲</option><option>大洋洲</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100 text-[10px] font-bold text-blue-600 uppercase tracking-tight shadow-sm self-center">
+                                        <i data-lucide="mouse-pointer-2" className="w-3 h-3"></i>
+                                        使用滑鼠滾輪縮放與拖曳地圖
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div ref={mapRef} className="w-full h-full" />
+
+                            {hoveredCountry && (
+                                <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-white border border-slate-200 px-8 py-5 rounded-[2.5rem] shadow-2xl animate-fade-up z-40">
+                                    <div className="flex items-center gap-8">
+                                        <div>
+                                            <div className="text-[10px] font-black text-blue-500 mb-0.5 uppercase tracking-widest">國別資訊</div>
+                                            <div className="text-2xl font-black text-slate-800 leading-none">{hoveredCountry.name}</div>
+                                            <div className="text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-wider">{hoveredCountry.id} | {COUNTRIES_DB.find(c => c.id === hoveredCountry.id)?.region}</div>
+                                        </div>
+                                        <div className="w-px h-10 bg-slate-100" />
+                                        <div className="text-right">
+                                            <div className="text-[10px] font-black text-slate-400 mb-0.5 uppercase tracking-widest">指標數值</div>
+                                            <div className="mono text-3xl font-black text-blue-600 leading-none">{hoveredCountry.val}</div>
+                                            <div className="text-[10px] text-slate-400 font-bold mt-1.5 uppercase">{selectedIndicator.unit}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* --- AI 按鈕區塊 --- */}
+                            <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-5">
+                                {!isChatOpen && showAIBubble && (
+                                    <div className="bg-slate-800 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-2xl bubble-tip relative animate-bounce">
+                                        <span className="flex items-center gap-2">
+                                            <i data-lucide="sparkles" className="w-3.5 h-3.5 text-amber-400"></i>
+                                            需要 AI 數據分析嗎？
+                                        </span>
+                                    </div>
+                                )}
+
+                                {isChatOpen && (
+                                    <div className="w-[400px] h-[550px] bg-white border border-slate-200 rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl animate-fade-up">
+                                        <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-blue-500 flex items-center justify-between text-white">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+                                                    <i data-lucide="bot" className="w-5 h-5"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="font-black text-xs tracking-wider uppercase">AI Consultant</div>
+                                                    <div className="text-[10px] opacity-80 flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span> 在線分析中
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => setIsChatOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                                <i data-lucide="x" className="w-5 h-5"></i>
+                                            </button>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar bg-slate-50/30">
+                                            {chatMessages.map((m, i) => (
+                                                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${m.role === 'user' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-700 border border-slate-200 shadow-sm'}`}>
+                                                        {m.text}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <div ref={chatEndRef} />
+                                        </div>
+                                        <div className="p-5 bg-white border-t border-slate-100">
+                                            <div className="relative group">
+                                                <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()}
+                                                    placeholder="輸入問題或尋求指標建議..." className="w-full bg-slate-100 border border-transparent rounded-2xl px-5 py-4 text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all pr-14" />
+                                                <button onClick={() => handleSend()} className="absolute right-2 top-2 w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 shadow-lg active:scale-95 transition-all">
+                                                    <i data-lucide="arrow-up" className="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button onClick={() => { setIsChatOpen(!isChatOpen); setShowAIBubble(false); }}
+                                    className={`w-16 h-16 rounded-2xl shadow-2xl flex items-center justify-center transition-all border-4 border-white group relative ${isChatOpen ? 'bg-slate-800 text-white rotate-90' : 'bg-blue-600 text-white ai-pulse hover:scale-110'}`}>
+                                    {isChatOpen ? <i data-lucide="plus" className="w-8 h-8"></i> : <i data-lucide="sparkles" className="w-8 h-8"></i>}
+                                    {!isChatOpen && (
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full"></span>
+                                    )}
+                                </button>
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        setInterval(() => { if (window.lucide) window.lucide.createIcons(); }, 1000);
+    </script>
+</body>
+
+</html>
