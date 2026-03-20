@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot 問題紀錄分析 Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tailwind Configuration for Custom Brand Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#00c48c', // 參考圖片的薄荷綠主色
+                            dark: '#00a374',
+                            light: '#e6f9f3'
+                        },
+                        slate: {
+                            800: '#2d3748', // 深藍灰字體
+                            700: '#4a5568',
+                            100: '#f7fafc',
+                            50: '#f4f6f8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 自定義滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* 排序圖標過渡動畫 */
+        .sort-icon {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full border-4 border-brand border-t-brand-light flex-shrink-0"></div>
+                <h1 class="text-xl font-bold text-slate-800">AI Chatbot 問題紀錄分析 Dashboard</h1>
+            </div>
+            <div class="text-sm text-gray-500">
+                資源循環雲 AI 顧問系統
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- 圖表區域 (Charts Row) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Chart 1: 問題類型統計 (Bar Chart) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-1 h-6 bg-brand mr-3 rounded-sm"></div>
+                    <h2 class="text-lg font-semibold text-slate-800">問題類型統計</h2>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="issueTypeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: 使用者身份統計 (Doughnut Chart) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-1 h-6 bg-brand mr-3 rounded-sm"></div>
+                    <h2 class="text-lg font-semibold text-slate-800">使用者身份分佈</h2>
+                </div>
+                <div class="relative h-64 w-full flex justify-center">
+                    <canvas id="userIdentityChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 分類定義說明區塊 (可折疊) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <button onclick="toggleInfo()"
+                class="w-full px-6 py-4 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-brand mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 class="text-base font-semibold text-slate-800">查看問題類型分類說明</h2>
+                </div>
+                <svg id="infoChevron" class="w-5 h-5 text-gray-500 transform transition-transform duration-200"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="infoContent" class="hidden px-6 py-6 border-t border-gray-200 bg-white">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    <!-- 1. 定義說明類 -->
+                    <div class="p-4 rounded-lg bg-emerald-50/50 border border-emerald-100">
+                        <div class="flex items-center mb-2">
+                            <span
+                                class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-md mr-2">1</span>
+                            <h3 class="font-semibold text-emerald-800">定義說明 (Concept / Definition)</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">說明指標、名詞、技術或概念的意義、計算方式或基本原理，屬於基礎知識理解。</p>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-emerald-50 mb-2">
+                            <span class="font-semibold text-gray-700">關鍵判斷詞：</span><br>
+                            是什麼、定義、怎麼計算、代表什麼
+                        </div>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-emerald-50">
+                            <span class="font-semibold text-gray-700">典型問題：</span><br>
+                            • 什麼是資源生產力？<br>
+                            • 循環利用率怎麼算？<br>
+                            • RAG是什麼？
+                        </div>
+                    </div>
+
+                    <!-- 2. 趨勢解讀類 -->
+                    <div class="p-4 rounded-lg bg-purple-50/50 border border-purple-100">
+                        <div class="flex items-center mb-2">
+                            <span
+                                class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-md mr-2">2</span>
+                            <h3 class="font-semibold text-purple-800">趨勢解讀 (Trend & Interpretation)</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">針對數據、指標或系統變化進行原因說明、趨勢解讀或分析邏輯。</p>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-purple-50 mb-2">
+                            <span class="font-semibold text-gray-700">關鍵判斷詞：</span><br>
+                            為什麼上升、如何理解、為何變化、代表什麼趨勢
+                        </div>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-purple-50">
+                            <span class="font-semibold text-gray-700">典型問題：</span><br>
+                            • 為什麼資源生產力下降？<br>
+                            • 回收率上升代表什麼？<br>
+                            • AI如何幫助理解循環系統變化？
+                        </div>
+                    </div>
+
+                    <!-- 3. 數據查詢類 -->
+                    <div class="p-4 rounded-lg bg-blue-50/50 border border-blue-100">
+                        <div class="flex items-center mb-2">
+                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-md mr-2">3</span>
+                            <h3 class="font-semibold text-blue-800">數據查詢 (Data Retrieval)</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">查詢特定指標、數據或統計資料的數值、時間序列或資料內容。</p>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-blue-50 mb-2">
+                            <span class="font-semibold text-gray-700">關鍵判斷詞：</span><br>
+                            多少、數據、查詢
+                        </div>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-blue-50">
+                            <span class="font-semibold text-gray-700">典型問題：</span><br>
+                            • 2023年廢棄物產生量是多少？<br>
+                            • 台灣人均物質消費量是多少？
+                        </div>
+                    </div>
+
+                    <!-- 4. 政策與制度背景類 -->
+                    <div class="p-4 rounded-lg bg-amber-50/50 border border-amber-100">
+                        <div class="flex items-center mb-2">
+                            <span
+                                class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md mr-2">4</span>
+                            <h3 class="font-semibold text-amber-800">政策與制度背景 (Policy)</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">說明政策、制度、平台或治理機制的背景、目的、邏輯與發展脈絡。</p>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-amber-50 mb-2">
+                            <span class="font-semibold text-gray-700">關鍵判斷詞：</span><br>
+                            為什麼要、政策目的、制度設計、治理需求
+                        </div>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-amber-50">
+                            <span class="font-semibold text-gray-700">典型問題：</span><br>
+                            • 為什麼要推動循環經濟？<br>
+                            • 為何強調數據整合？<br>
+                            • 為什麼需要資源循環雲？
+                        </div>
+                    </div>
+
+                    <!-- 5. 功能應用類 -->
+                    <div class="p-4 rounded-lg bg-teal-50/50 border border-teal-100">
+                        <div class="flex items-center mb-2">
+                            <span class="bg-teal-100 text-teal-700 text-xs font-bold px-2 py-1 rounded-md mr-2">5</span>
+                            <h3 class="font-semibold text-teal-800">功能應用 (Function & Usage)</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-3">說明系統、工具或AI的功能、操作方式、應用場景與使用方法。</p>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-teal-50 mb-2">
+                            <span class="font-semibold text-gray-700">關鍵判斷詞：</span><br>
+                            怎麼用、可以做什麼、功能是什麼、能不能
+                        </div>
+                        <div class="text-xs text-gray-500 bg-white p-2 rounded border border-teal-50">
+                            <span class="font-semibold text-gray-700">典型問題：</span><br>
+                            • 如何查詢物質流？<br>
+                            • AI可以幫我分析什麼？<br>
+                            • AI顧問和客服差在哪？
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 表格與控制區域 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+
+            <!-- 表格標頭與篩選器 -->
+            <div class="p-6 border-b border-gray-100 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-1 h-6 bg-brand mr-3 rounded-sm"></div>
+                        <h2 class="text-lg font-semibold text-slate-800">問題紀錄列表</h2>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        共顯示 <span id="recordCount" class="font-bold text-brand">0</span> 筆紀錄
+                    </div>
+                </div>
+
+                <!-- 搜尋與篩選列 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+
+                    <!-- 搜尋框 -->
+                    <div class="relative col-span-1 md:col-span-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input type="text" id="searchInput" placeholder="搜尋問題內容..."
+                            class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand focus:ring focus:ring-brand focus:ring-opacity-50 border py-2 px-3 text-sm">
+                    </div>
+
+                    <!-- 模組篩選 -->
+                    <div>
+                        <select id="moduleFilter"
+                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand focus:ring focus:ring-brand focus:ring-opacity-50 border py-2 px-3 text-sm text-gray-700">
+                            <option value="">所有功能模組</option>
+                            <option value="循環情報">循環情報</option>
+                            <option value="循環指標">循環指標</option>
+                            <option value="統計查詢">統計查詢</option>
+                            <option value="流布分析">流布分析</option>
+                            <option value="循環減碳">循環減碳</option>
+                            <option value="系統與平台說明">系統與平台說明</option>
+                        </select>
+                    </div>
+
+                    <!-- 類型篩選 -->
+                    <div>
+                        <select id="typeFilter"
+                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand focus:ring focus:ring-brand focus:ring-opacity-50 border py-2 px-3 text-sm text-gray-700">
+                            <option value="">所有問題類型</option>
+                            <option value="定義說明">定義說明</option>
+                            <option value="趨勢解讀">趨勢解讀</option>
+                            <option value="數據查詢">數據查詢</option>
+                            <option value="政策與制度背景">政策與制度背景</option>
+                            <option value="功能應用">功能應用</option>
+                        </select>
+                    </div>
+
+                    <!-- 身份篩選 -->
+                    <div>
+                        <select id="identityFilter"
+                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand focus:ring focus:ring-brand focus:ring-opacity-50 border py-2 px-3 text-sm text-gray-700">
+                            <option value="">所有使用者身份</option>
+                            <option value="一般民眾">一般民眾</option>
+                            <option value="政府機關">政府機關</option>
+                            <option value="產業 / 企業">產業 / 企業</option>
+                            <option value="學術研究">學術研究</option>
+                            <option value="環保團體">環保團體</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 表格主體 -->
+            <div class="overflow-x-auto relative">
+                <div class="max-h-[500px] overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-600 text-sm sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="py-3 px-4 font-semibold cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onclick="handleSort('time')">
+                                    <div class="flex items-center gap-1">時間 <span id="sort-time"
+                                            class="sort-icon text-gray-400">↕</span></div>
+                                </th>
+                                <th class="py-3 px-4 font-semibold cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onclick="handleSort('identity')">
+                                    <div class="flex items-center gap-1">使用者身份 <span id="sort-identity"
+                                            class="sort-icon text-gray-400">↕</span></div>
+                                </th>
+                                <th class="py-3 px-4 font-semibold cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onclick="handleSort('module')">
+                                    <div class="flex items-center gap-1">功能模組 <span id="sort-module"
+                                            class="sort-icon text-gray-400">↕</span></div>
+                                </th>
+                                <th class="py-3 px-4 font-semibold cursor-pointer hover:bg-gray-100 transition-colors"
+                                    onclick="handleSort('type')">
+                                    <div class="flex items-center gap-1">問題類型 <span id="sort-type"
+                                            class="sort-icon text-gray-400">↕</span></div>
+                                </th>
+                                <th class="py-3 px-4 font-semibold w-2/5">
+                                    使用者問題內容
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="text-sm divide-y divide-gray-100">
+                            <!-- 資料將由 JavaScript 動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 空狀態提示 -->
+                <div id="emptyState" class="hidden py-12 text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>找不到符合條件的紀錄</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- 1. 定義常數與選項 ---
+        const IDENTITIES = ['一般民眾', '政府機關', '產業 / 企業', '學術研究', '環保團體'];
+        const ISSUE_TYPES = ['定義說明', '趨勢解讀', '數據查詢', '政策與制度背景', '功能應用'];
+        const MODULES = ['循環情報', '循環指標', '統計查詢', '流布分析', '循環減碳', '系統與平台說明'];
+
+        // 假資料問題庫，用於產生更真實的模擬數據
+        const mockQuestions = {
+            '定義說明': ['什麼是資源生產力？', '循環利用率怎麼算？', 'RAG是什麼？'],
+            '趨勢解讀': ['為什麼資源生產力下降？', '回收率上升代表什麼？', 'AI如何幫助理解循環系統變化？'],
+            '數據查詢': ['2023年廢棄物產生量是多少？', '台灣人均物質消費量是多少？'],
+            '政策與制度背景': ['為什麼要推動循環經濟？', '為何強調數據整合？', '為什麼需要資源循環雲？'],
+            '功能應用': ['如何查詢物質流？', 'AI可以幫我分析什麼？', 'AI顧問和客服差在哪？']
+        };
+
+        const chartColors = [
+            'rgba(0, 196, 140, 0.8)', // Brand Green
+            'rgba(54, 162, 235, 0.8)', // Blue
+            'rgba(255, 206, 86, 0.8)', // Yellow
+            'rgba(75, 192, 192, 0.8)', // Teal
+            'rgba(153, 102, 255, 0.8)',// Purple
+            'rgba(255, 159, 64, 0.8)'  // Orange
+        ];
+
+        // --- 2. 狀態管理 ---
+        let allData = [];
+        let filteredData = [];
+        let currentSort = { column: 'time', direction: 'desc' }; // 預設依時間新到舊排序
+
+        let charts = {
+            issueType: null,
+            userIdentity: null
+        };
+
+        // --- 3. 產生 Mock Data ---
+        function generateMockData(count = 100) {
+            const data = [];
+            const now = new Date();
+
+            for (let i = 0; i < count; i++) {
+                // 隨機生成過去 30 天內的時間
+                const date = new Date(now.getTime() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000));
+
+                // 增加一些權重，讓資料看起來更真實 (例如民眾和企業較多，查詢與定義較多)
+                const identity = IDENTITIES[Math.floor(Math.random() * IDENTITIES.length)];
+
+                // 稍微偏向某些類型
+                let typeIndex = Math.floor(Math.random() * 10);
+                let type;
+                if (typeIndex < 3) type = '數據查詢';
+                else if (typeIndex < 5) type = '定義說明';
+                else if (typeIndex < 7) type = '功能應用';
+                else type = ISSUE_TYPES[Math.floor(Math.random() * ISSUE_TYPES.length)];
+
+                const module = MODULES[Math.floor(Math.random() * MODULES.length)];
+
+                // 根據選定類型獲取隨機問題內容
+                const questionsForType = mockQuestions[type];
+                const content = questionsForType[Math.floor(Math.random() * questionsForType.length)];
+
+                data.push({
+                    id: i,
+                    time: date,
+                    timeString: formatDate(date),
+                    identity: identity,
+                    module: module,
+                    type: type,
+                    content: content
+                });
+            }
+            // 預設排序 (新到舊)
+            return data.sort((a, b) => b.time - a.time);
+        }
+
+        function formatDate(date) {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        // --- 4. 繪製與更新圖表 ---
+        function initCharts() {
+            // Chart.js 全局設定
+            Chart.defaults.font.family = '"Noto Sans TC", sans-serif';
+            Chart.defaults.color = '#4a5568';
+
+            const typeCtx = document.getElementById('issueTypeChart').getContext('2d');
+            charts.issueType = new Chart(typeCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 4], color: '#f0f0f0' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const identityCtx = document.getElementById('userIdentityChart').getContext('2d');
+            charts.userIdentity = new Chart(identityCtx, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } }
+                    },
+                    cutout: '65%' // 讓圓餅圖中間更空心，看起來更現代
+                }
+            });
+        }
+
+        function updateChartsData(data) {
+            // 計算問題類型分佈
+            const typeCounts = ISSUE_TYPES.reduce((acc, type) => ({ ...acc, [type]: 0 }), {});
+            // 計算使用者身份分佈
+            const identityCounts = IDENTITIES.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
+
+            data.forEach(item => {
+                if (typeCounts[item.type] !== undefined) typeCounts[item.type]++;
+                if (identityCounts[item.identity] !== undefined) identityCounts[item.identity]++;
+            });
+
+            // 更新問題類型圖表
+            charts.issueType.data = {
+                labels: ISSUE_TYPES,
+                datasets: [{
+                    label: '提問次數',
+                    data: ISSUE_TYPES.map(t => typeCounts[t]),
+                    backgroundColor: chartColors[0], // 單一主色
+                    borderRadius: 4
+                }]
+            };
+            charts.issueType.update();
+
+            // 更新使用者身份圖表
+            charts.userIdentity.data = {
+                labels: IDENTITIES,
+                datasets: [{
+                    data: IDENTITIES.map(i => identityCounts[i]),
+                    backgroundColor: chartColors,
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            };
+            charts.userIdentity.update();
+        }
+
+        // --- 5. 表格渲染與互動 ---
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const recordCount = document.getElementById('recordCount');
+
+            tbody.innerHTML = '';
+            recordCount.textContent = data.length;
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            data.forEach(row => {
+                // 標籤顏色邏輯
+                let typeColorClass = 'bg-gray-100 text-gray-700';
+                if (row.type === '數據查詢') typeColorClass = 'bg-blue-50 text-blue-700 border border-blue-100';
+                if (row.type === '定義說明') typeColorClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                if (row.type === '趨勢解讀') typeColorClass = 'bg-purple-50 text-purple-700 border border-purple-100';
+                if (row.type === '政策與制度背景') typeColorClass = 'bg-amber-50 text-amber-700 border border-amber-100';
+                if (row.type === '功能應用') typeColorClass = 'bg-teal-50 text-teal-700 border border-teal-100';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-brand/5 transition-colors border-b border-gray-50 last:border-0';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-gray-500 whitespace-nowrap">${row.timeString}</td>
+                    <td class="py-3 px-4 font-medium">${row.identity}</td>
+                    <td class="py-3 px-4 text-gray-600">${row.module}</td>
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeColorClass}">
+                            ${row.type}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-gray-800">${row.content}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 處理排序
+        function handleSort(column) {
+            // 重置所有圖標
+            document.querySelectorAll('.sort-icon').forEach(el => {
+                el.textContent = '↕';
+                el.classList.remove('text-brand', 'font-bold');
+            });
+
+            if (currentSort.column === column) {
+                // 切換方向
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                // 新欄位，預設 asc
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            // 更新 UI 圖標
+            const icon = document.getElementById(`sort-${column}`);
+            icon.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+            icon.classList.add('text-brand', 'font-bold');
+
+            // 執行排序
+            filteredData.sort((a, b) => {
+                let valA = a[column];
+                let valB = b[column];
+
+                // 時間欄位特殊處理
+                if (column === 'time') {
+                    valA = a.time.getTime();
+                    valB = b.time.getTime();
+                } else {
+                    valA = valA.toString().toLowerCase();
+                    valB = valB.toString().toLowerCase();
+                }
+
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderTable(filteredData);
+        }
+
+        // 處理篩選與搜尋
+        function applyFilters() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const moduleVal = document.getElementById('moduleFilter').value;
+            const typeVal = document.getElementById('typeFilter').value;
+            const identityVal = document.getElementById('identityFilter').value;
+
+            filteredData = allData.filter(item => {
+                const matchSearch = item.content.toLowerCase().includes(searchText) || item.identity.includes(searchText);
+                const matchModule = moduleVal === '' || item.module === moduleVal;
+                const matchType = typeVal === '' || item.type === typeVal;
+                const matchIdentity = identityVal === '' || item.identity === identityVal;
+
+                return matchSearch && matchModule && matchType && matchIdentity;
+            });
+
+            // 保持當前的排序狀態
+            const col = currentSort.column;
+            const dir = currentSort.direction;
+            currentSort.column = null; // 強制 handleSort 重新應用方向
+            handleSort(col);
+            if (currentSort.direction !== dir) handleSort(col); // 修正如果切換欄位導致方向反轉的問題
+
+            // 同步更新圖表以反映當前篩選結果
+            updateChartsData(filteredData);
+        }
+
+        // --- 6. 初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 產生資料
+            allData = generateMockData(150);
+            filteredData = [...allData];
+
+            // 初始化圖表
+            initCharts();
+            updateChartsData(filteredData);
+
+            // 綁定篩選器事件
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('moduleFilter').addEventListener('change', applyFilters);
+            document.getElementById('typeFilter').addEventListener('change', applyFilters);
+            document.getElementById('identityFilter').addEventListener('change', applyFilters);
+
+            // 初始渲染表格 (觸發一次排序設定初始狀態)
+            handleSort('time');
+        });
+
+        // --- 7. UI 互動功能 ---
+        function toggleInfo() {
+            const content = document.getElementById('infoContent');
+            const chevron = document.getElementById('infoChevron');
+
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+    </script>
+</body>
+
+</html>
