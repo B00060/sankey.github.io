@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資源循環雲 - 資源生產力</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自訂捲軸樣式 - 針對小聊天框優化 */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 聊天視窗彈出動畫 */
+        .chat-scale-in {
+            transform-origin: bottom right;
+            animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.85);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 品牌顏色設定 */
+        /* 加深文字顏色，解決在白底上看不清楚的問題 */
+        .text-brand {
+            color: #009874;
+        }
+
+        /* 背景色維持原本的亮綠色 */
+        .bg-brand {
+            background-color: #00d7a0;
+        }
+
+        .border-brand {
+            border-color: #00d7a0;
+        }
+
+        /* 對話選項的邊框顏色加深一點以增加對比 */
+        .border-brand-text {
+            border-color: #009874;
+        }
+
+        /* 標題左側裝飾線 */
+        .title-accent {
+            border-left: 6px solid #00d7a0;
+            padding-left: 12px;
+        }
+    </style>
+</head>
+
+<body class="bg-[#f4f6f8] h-screen flex flex-col font-sans overflow-hidden text-slate-700">
+
+    <!-- 頂部導覽列 (對齊原圖) -->
+    <header
+        class="bg-white border-b border-gray-200 z-10 flex-shrink-0 shadow-sm h-16 flex items-center justify-between px-6">
+        <div class="flex items-center gap-2">
+            <!-- Logo Icon 模擬 -->
+            <div class="w-8 h-8 rounded-full border-4 border-brand border-l-cyan-400 border-t-cyan-400 rotate-45"></div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800 leading-tight">資源循環雲</h1>
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider leading-none">Resource Circulation Cloud
+                </p>
+            </div>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+            <a href="#" class="hover:text-brand flex items-center gap-1">關於網站 <i
+                    class="fa-solid fa-angle-down text-xs"></i></a>
+            <a href="#" class="hover:text-brand flex items-center gap-1">訊息中心 <i
+                    class="fa-solid fa-angle-down text-xs"></i></a>
+            <a href="#" class="hover:text-brand flex items-center gap-1">循環情報 <i
+                    class="fa-solid fa-angle-down text-xs"></i></a>
+            <a href="#" class="text-brand flex items-center gap-1">循環指標 <i
+                    class="fa-solid fa-angle-down text-xs"></i></a>
+            <a href="#" class="hover:text-brand flex items-center gap-1">統計查詢 <i
+                    class="fa-solid fa-angle-down text-xs"></i></a>
+            <a href="#" class="hover:text-brand flex items-center gap-1">流布分析 <i
+                    class="fa-solid fa-angle-down text-xs"></i></a>
+            <a href="#" class="hover:text-brand">減碳分析</a>
+            <div class="w-px h-4 bg-gray-300 mx-2"></div>
+            <a href="#" class="hover:text-brand">登入</a>
+
+            <button
+                class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+                <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
+            </button>
+            <button
+                class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+                <i class="fa-solid fa-share-nodes text-gray-500"></i>
+            </button>
+        </nav>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto">
+
+        <!-- 左側：指標選單 (對齊原圖) -->
+        <aside class="w-64 bg-[#f4f6f8] flex flex-col flex-shrink-0 z-10 py-6 pr-6">
+            <div class="bg-[#233d54] text-white py-4 px-5 text-lg font-medium rounded-t-md">
+                循環指標
+            </div>
+            <div class="bg-white flex-1 overflow-y-auto shadow-sm rounded-b-md">
+                <!-- 第一層 -->
+                <div class="border-b border-gray-100">
+                    <button class="w-full text-left px-5 py-4 flex items-center gap-2 text-brand font-medium">
+                        <i class="fa-solid fa-minus text-xs"></i> 生產與消費
+                    </button>
+                    <!-- 第二層子選單 -->
+                    <div class="bg-white pb-2">
+                        <a href="#"
+                            class="block px-10 py-3 bg-brand text-white font-medium flex justify-between items-center shadow-inner">
+                            資源生產力 <i class="fa-solid fa-angle-right text-sm"></i>
+                        </a>
+                        <a href="#" class="block px-10 py-3 text-slate-600 hover:bg-gray-50 transition">人均物質消費</a>
+                        <a href="#" class="block px-10 py-3 text-slate-600 hover:bg-gray-50 transition">直接物質投入</a>
+                        <a href="#" class="block px-10 py-3 text-slate-600 hover:bg-gray-50 transition">國內物質消費</a>
+                    </div>
+                </div>
+
+                <div class="border-b border-gray-100">
+                    <button
+                        class="w-full text-left px-5 py-4 flex items-center gap-2 text-slate-600 hover:text-brand transition">
+                        <i class="fa-solid fa-plus text-xs"></i> 廢棄物產出
+                    </button>
+                </div>
+                <div class="border-b border-gray-100">
+                    <button
+                        class="w-full text-left px-5 py-4 flex items-center gap-2 text-slate-600 hover:text-brand transition">
+                        <i class="fa-solid fa-plus text-xs"></i> 資源回收
+                    </button>
+                </div>
+                <div class="border-b border-gray-100">
+                    <button
+                        class="w-full text-left px-5 py-4 flex items-center gap-2 text-slate-600 hover:text-brand transition">
+                        <i class="fa-solid fa-plus text-xs"></i> 循環利用
+                    </button>
+                </div>
+                <div>
+                    <button
+                        class="w-full text-left px-5 py-4 flex items-center gap-2 text-slate-600 hover:text-brand transition">
+                        <i class="fa-solid fa-plus text-xs"></i> 競爭與創新
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右側：資料圖表區 (模擬背景) -->
+        <section class="flex-1 overflow-y-auto py-6 pb-24">
+            <div class="bg-white rounded-xl shadow-sm p-10 min-h-full">
+                <!-- 標題與分享列 -->
+                <div class="flex justify-between items-start mb-8 border-b border-gray-100 pb-8">
+                    <div class="title-accent">
+                        <h2 class="text-3xl font-medium text-slate-800 mb-2">資源生產力</h2>
+                        <h3 class="text-xl text-slate-500 font-normal">Resource Productivity ; RP</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <!-- 圓形 Icon 按鈕 -->
+                        <button
+                            class="w-10 h-10 rounded-full border border-brand text-brand flex items-center justify-center hover:bg-brand hover:text-white transition"><i
+                                class="fa-brands fa-facebook-f"></i></button>
+                        <button
+                            class="w-10 h-10 rounded-full border border-brand text-brand flex items-center justify-center hover:bg-brand hover:text-white transition"><i
+                                class="fa-brands fa-twitter"></i></button>
+                        <button
+                            class="w-10 h-10 rounded-full border border-brand text-brand flex items-center justify-center hover:bg-brand hover:text-white transition"><i
+                                class="fa-solid fa-link"></i></button>
+                        <button
+                            class="w-10 h-10 rounded-full border border-brand text-brand flex items-center justify-center hover:bg-brand hover:text-white transition"><i
+                                class="fa-solid fa-share-nodes"></i></button>
+                        <button
+                            class="w-10 h-10 rounded-full border border-brand text-brand flex items-center justify-center hover:bg-brand hover:text-white transition"><i
+                                class="fa-solid fa-print"></i></button>
+                    </div>
+                </div>
+
+                <!-- 定義區塊 -->
+                <div class="bg-[#eaf5f4] rounded-lg p-6 mb-8 text-slate-700 leading-relaxed shadow-inner">
+                    <span
+                        class="font-bold text-slate-800">定義：</span>資源生產力用來衡量經濟體系中運用資源產生經濟價值的效率，表示每單位資源所能產的經濟產值。資源生產力的數值越高，表示資源使用效率越高，能以更少的資源投入創造更多的經濟價值。
+                </div>
+
+                <!-- 計算公式 -->
+                <div class="mb-8">
+                    <div class="flex mb-6">
+                        <div class="w-24 font-medium text-slate-500 pt-1">計算公式</div>
+                        <div class="flex-1 border-l-4 border-brand pl-4 text-lg font-medium text-slate-800">
+                            資源生產力 = 實質GDP/DMC
+                        </div>
+                    </div>
+
+                    <div class="flex">
+                        <div class="w-24 font-medium text-slate-500 pt-1">計算說明</div>
+                        <div class="flex-1 border-l-4 border-brand pl-4">
+                            <h4 class="text-lg font-medium text-slate-800 mb-2">實質國內生產毛額 ( Real GDP )</h4>
+                            <p class="text-slate-600 mb-6 leading-relaxed">
+                                實質國內生產毛額，一年內國內民所生產的最終產品與服務按給定基準年的市場價值，不同年份的實質GDP是按同一基準年的價格計算得出，不包含不同年份中價格變動對GDP的影響。資料來源為<a
+                                    href="#" class="text-brand underline hover:text-teal-600">「 國民所得及經濟成長統計資料庫 」</a>。
+                            </p>
+
+                            <h4 class="text-lg font-medium text-slate-800 mb-2">國內物質消費量 ( DMC )</h4>
+                            <p class="text-slate-600 leading-relaxed mb-6">
+                                國內物質消費量為指標說明...
+                                <br><br>
+                                (此處省略大量圖表以示範版面)
+                            </p>
+
+                            <!-- 模擬圖表佔位 -->
+                            <div
+                                class="w-full h-64 bg-gray-50 border border-gray-200 rounded flex items-center justify-center text-gray-400">
+                                [歷年趨勢圖表區塊]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- AI Chatbot 元件 (右下角浮動)                -->
+    <!-- ========================================== -->
+
+    <!-- FAB 觸發按鈕 -->
+    <button id="chatbot-fab" onclick="toggleChat()"
+        class="fixed bottom-6 right-8 w-14 h-14 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-700 hover:scale-105 transition-all z-50 group">
+        <i class="fa-solid fa-robot text-2xl group-hover:rotate-12 transition-transform"></i>
+        <!-- 提示小紅點 -->
+        <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+    </button>
+
+    <!-- 聊天視窗 (預設隱藏，體積適中不擋背景) -->
+    <div id="chatbot-window"
+        class="fixed bottom-6 right-8 w-[360px] h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 hidden border border-gray-200 overflow-hidden">
+
+        <!-- 視窗頭部 -->
+        <div class="bg-slate-800 text-white px-4 py-3 flex justify-between items-center shadow-md z-10">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-leaf text-brand"></i>
+                <h3 class="font-medium tracking-wide text-sm">AI 顧問 <span
+                        class="text-xs text-slate-400 ml-1 font-normal">引導模式</span></h3>
+            </div>
+            <div class="flex items-center gap-1">
+                <button onclick="resetChat()"
+                    class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-700 text-slate-300 transition"
+                    title="重新設定">
+                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                </button>
+                <button onclick="toggleChat()"
+                    class="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-700 text-slate-300 transition"
+                    title="縮小">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 聊天對話區 -->
+        <div id="chat-body" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-[#f8fafc]">
+            <!-- 內容由 JS 動態生成 (Conversational Setup) -->
+        </div>
+
+        <!-- 輸入區 -->
+        <div class="bg-white border-t border-gray-100 p-3 z-10 flex-shrink-0">
+            <form id="chat-form" class="flex gap-2" onsubmit="handleSendMessage(event)">
+                <!-- 修改了 input 的背景、邊框與 placeholder 顏色，確保文字清晰 -->
+                <input type="text" id="chat-input" disabled
+                    class="flex-1 bg-white border border-gray-300 text-sm text-slate-900 placeholder-slate-500 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition disabled:bg-gray-100 disabled:text-gray-500 disabled:border-gray-200 disabled:placeholder-gray-400"
+                    placeholder="請先完成上方選擇..." autocomplete="off">
+                <button type="submit" id="send-btn" disabled
+                    class="bg-brand text-white rounded-full w-9 h-9 flex items-center justify-center hover:bg-teal-500 transition shadow-sm disabled:opacity-50 flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- 設定資料 ---
+        const identities = ['一般民眾', '政府機關', '產業 / 企業', '學術研究', '環保團體'];
+        const modulesData = [
+            { name: '循環情報', icon: 'fa-newspaper', type: 'buttons', subs: ['總體資源概況', '廢棄物月報', '資源循環指標總覽', '國家層級物質流向', '國際循環觀測'] },
+            { name: '循環指標', icon: 'fa-chart-pie', type: 'input', subs: [] },
+            { name: '統計查詢', icon: 'fa-magnifying-glass-chart', type: 'direct', subs: [] },
+            { name: '流布分析', icon: 'fa-network-wired', type: 'direct', subs: [] },
+            { name: '循環減碳', icon: 'fa-cloud-arrow-down', type: 'direct', subs: [] },
+            { name: '系統說明', icon: 'fa-circle-info', type: 'direct', subs: [] }
+        ];
+
+        // --- 狀態與 DOM ---
+        let state = {
+            isOpen: false,
+            step: 0, // 0: init, 1: wait identity, 2: wait module, 3: wait sub, 4: chat ready
+            identity: null,
+            module: null,
+            subModule: null
+        };
+
+        const els = {
+            fab: document.getElementById('chatbot-fab'),
+            window: document.getElementById('chatbot-window'),
+            body: document.getElementById('chat-body'),
+            input: document.getElementById('chat-input'),
+            btn: document.getElementById('send-btn'),
+            form: document.getElementById('chat-form')
+        };
+
+        // --- 狀態記憶功能 (Session Storage) ---
+        function saveState() {
+            sessionStorage.setItem('ai_advisor_state', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = sessionStorage.getItem('ai_advisor_state');
+            if (saved) {
+                state = JSON.parse(saved);
+                // 確保對話框處於開啟狀態時的正確顯示
+                state.isOpen = true;
+
+                if (state.step === 4) {
+                    restoreChat();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- 視窗開關控制 ---
+        function toggleChat() {
+            state.isOpen = !state.isOpen;
+            if (state.isOpen) {
+                els.window.classList.remove('hidden');
+                els.window.classList.add('chat-scale-in');
+                els.fab.classList.add('hidden');
+
+                // 初次開啟時，檢查是否有記憶的狀態
+                if (state.step === 0) {
+                    const hasSavedState = loadState();
+                    if (!hasSavedState) {
+                        startGuidedSetup();
+                    }
+                }
+            } else {
+                els.window.classList.add('hidden');
+                els.window.classList.remove('chat-scale-in');
+                els.fab.classList.remove('hidden');
+            }
+        }
+
+        // --- 核心：對話 UI 產生器 ---
+        function addAIMessage(text, optionsHtml = '') {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex items-start gap-2 fade-in max-w-[90%]`;
+            wrapper.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-white flex-shrink-0 mt-1">
+                    <i class="fa-solid fa-robot text-xs"></i>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-200 text-sm text-slate-800 leading-relaxed">
+                        ${text}
+                    </div>
+                    ${optionsHtml}
+                </div>
+            `;
+            els.body.appendChild(wrapper);
+            scrollToBottom();
+            return wrapper;
+        }
+
+        function addUserMessage(text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex items-start gap-2 fade-in max-w-[90%] self-end flex-row-reverse`;
+            wrapper.innerHTML = `
+                <div class="bg-brand text-white p-3 rounded-2xl rounded-tr-none shadow-sm text-sm">
+                    ${text}
+                </div>
+            `;
+            els.body.appendChild(wrapper);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            els.body.scrollTop = els.body.scrollHeight;
+        }
+
+        // --- 對話式設定流程 ---
+
+        function startGuidedSetup() {
+            els.body.innerHTML = ''; // 清空
+            state.step = 1;
+
+            // 產生身分選項 UI (加深文字色彩 border-brand-text 與 text-brand)
+            const btns = identities.map(id =>
+                `<button onclick="selectIdentity('${id}')" class="px-3 py-1.5 bg-white border border-brand-text text-brand hover:bg-brand hover:text-white rounded-full text-xs transition whitespace-nowrap">${id}</button>`
+            ).join('');
+
+            const optionsContainer = `<div class="flex flex-wrap gap-2 mt-1" id="opts-step1">${btns}</div>`;
+
+            addAIMessage("您好！我是資源循環雲 AI 顧問 👋<br>為了提供最適合您的回答，請先選擇您的<b>使用者身份</b>：", optionsContainer);
+        }
+
+        function selectIdentity(id) {
+            document.getElementById('opts-step1').remove(); // 移除選項按鈕
+            addUserMessage(id);
+            state.identity = id;
+            state.step = 2;
+
+            setTimeout(() => {
+                // 產生模組選項 UI
+                const btns = modulesData.map(mod =>
+                    `<button onclick="selectModule('${mod.name}')" class="flex flex-col items-center justify-center p-2 bg-white border border-gray-300 hover:border-brand-text hover:text-brand rounded text-xs transition gap-1 text-slate-700">
+                        <i class="fa-solid ${mod.icon}"></i> ${mod.name}
+                    </button>`
+                ).join('');
+
+                const optionsContainer = `<div class="grid grid-cols-2 gap-2 mt-1" id="opts-step2">${btns}</div>`;
+                addAIMessage(`收到，已設定為「${id}」。<br>接下來，您想諮詢哪個<b>功能模組</b>呢？`, optionsContainer);
+            }, 600);
+        }
+
+        function selectModule(modName) {
+            document.getElementById('opts-step2').remove();
+            addUserMessage(modName);
+            const module = modulesData.find(m => m.name === modName);
+            state.module = module;
+
+            setTimeout(() => {
+                if (module.type === 'buttons') {
+                    state.step = 3;
+                    // 產生子模組清單
+                    const btns = module.subs.map(sub =>
+                        `<button onclick="selectSubModule('${sub}')" class="w-full text-left px-3 py-2 bg-white border border-gray-300 hover:border-brand-text hover:text-brand rounded text-xs transition flex justify-between items-center text-slate-700">
+                            ${sub} <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>`
+                    ).join('');
+                    const optionsContainer = `<div class="flex flex-col gap-1.5 mt-1" id="opts-step3">${btns}</div>`;
+                    addAIMessage(`需要進一步限縮範圍嗎？請選擇子模組：`, optionsContainer);
+                } else if (module.type === 'input') {
+                    state.step = 3;
+                    // 開啟輸入框讓使用者自己打
+                    addAIMessage(`「循環指標」的項目非常多，請問您想查看哪一個特定的「<b>指標名稱</b>」呢？（請直接於下方輸入）`);
+                    els.input.disabled = false;
+                    els.btn.disabled = false;
+                    els.input.placeholder = "請輸入指標名稱 (如: 資源生產力)...";
+                    els.input.focus();
+                } else {
+                    // 其他功能 (direct)，跳過子模組直接完成設定
+                    finishSetup();
+                }
+            }, 600);
+        }
+
+        function selectSubModule(subName) {
+            document.getElementById('opts-step3').remove();
+            addUserMessage(subName);
+            state.subModule = subName;
+
+            setTimeout(() => {
+                finishSetup();
+            }, 600);
+        }
+
+        function finishSetup() {
+            state.step = 4;
+            saveState(); // 儲存設定到記憶體
+
+            let contextStr = `<span class="text-brand font-medium">${state.module.name}</span>`;
+            if (state.subModule) contextStr += ` > <span class="text-brand font-medium">${state.subModule}</span>`;
+
+            // 啟動輸入框
+            els.input.disabled = false;
+            els.btn.disabled = false;
+            els.input.placeholder = "請輸入您的問題...";
+            els.input.focus();
+
+            addAIMessage(`✅ <b>設定完成！</b><br>目前的諮詢範圍聚焦於：<br>${contextStr}<br><br>請問有什麼我可以幫忙的嗎？`);
+
+            // 針對當前畫面「資源生產力」給予建議問題
+            if (state.subModule === '資源生產力' || state.module.name === '循環指標') {
+                showSuggestedQuestions([
+                    `關於「${state.subModule || '該指標'}」近五年的變化？`,
+                    "如何解讀相關的數據？",
+                    "我想匯出這份報告"
+                ]);
+            }
+        }
+
+        // --- 恢復聊天 (處理重新載入或重開的記憶) ---
+        function restoreChat() {
+            els.body.innerHTML = '';
+
+            let contextStr = `<span class="text-brand font-medium">${state.module.name}</span>`;
+            if (state.subModule) contextStr += ` > <span class="text-brand font-medium">${state.subModule}</span>`;
+
+            // 加入了帶有背景色的「小提示」區塊，明確告知重整後系統保留了設定，以及如何切換
+            addAIMessage(`👋 <b>歡迎回來！</b><br>系統已自動為您保留上次的設定：<br>身份：<b>${state.identity}</b><br>範圍：${contextStr}
+                <div class="bg-[#f0f9f8] border border-[#a8dfd5] p-3 rounded-lg text-xs text-slate-700 mt-3 mb-1 shadow-sm">
+                    <i class="fa-solid fa-lightbulb text-[#009874] mr-1 text-sm"></i> 
+                    <b>提示：</b>若想查詢其他主題的資料，或需要更改身分，請隨時點擊右上角的「<i class="fa-solid fa-rotate-left mx-1 text-slate-500"></i>」按鈕。
+                </div>
+                請問有什麼我可以幫忙的嗎？`);
+
+            els.input.disabled = false;
+            els.btn.disabled = false;
+            els.input.placeholder = "請輸入您的問題...";
+
+            if (state.subModule === '資源生產力' || state.module.name === '循環指標') {
+                showSuggestedQuestions([
+                    "資源生產力近五年的變化？",
+                    "如何解讀左側的 DMC 數據？",
+                    "我想匯出這份報告"
+                ]);
+            }
+            scrollToBottom();
+        }
+
+        function showSuggestedQuestions(questions) {
+            const btns = questions.map(q =>
+                `<button onclick="fillAndSend('${q}')" class="px-3 py-1.5 bg-[#eaf5f4] text-[#008a66] hover:bg-[#d5ece9] border border-[#a8dfd5] rounded-full text-xs transition whitespace-nowrap">${q}</button>`
+            ).join('');
+
+            const div = document.createElement('div');
+            div.className = "flex flex-wrap gap-2 ml-9 mt-1 mb-2 fade-in";
+            div.id = "current-suggestions";
+            div.innerHTML = btns;
+            els.body.appendChild(div);
+            scrollToBottom();
+        }
+
+        function fillAndSend(text) {
+            const sugg = document.getElementById('current-suggestions');
+            if (sugg) sugg.remove();
+
+            els.input.value = text;
+            handleSendMessage(new Event('submit'));
+        }
+
+        function resetChat() {
+            // 如果還沒完成完整設定(還在選擇階段)，就直接整個重來，不囉嗦
+            if (state.step !== 4) {
+                hardReset();
+                return;
+            }
+
+            // 停用輸入框，等待使用者選擇重設選項
+            els.input.disabled = true;
+            els.btn.disabled = true;
+
+            // 移除可能存在的建議問題，避免畫面雜亂
+            const sugg = document.getElementById('current-suggestions');
+            if (sugg) sugg.remove();
+
+            // 提供保留身分或完全重設的選項
+            const optionsHtml = `
+                <div class="flex flex-col gap-2 mt-2" id="opts-reset">
+                    <button onclick="softReset()" class="px-3 py-2 bg-white border border-brand-text text-brand hover:bg-brand hover:text-white rounded shadow-sm text-sm transition text-left flex justify-between items-center group">
+                        <span><i class="fa-solid fa-layer-group mr-1"></i> 僅重新選擇功能模組</span>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-brand group-hover:text-white"></i>
+                    </button>
+                    <button onclick="hardReset()" class="px-3 py-2 bg-white border border-gray-300 text-slate-600 hover:bg-gray-50 rounded shadow-sm text-sm transition text-left">
+                        <i class="fa-solid fa-user-pen mr-1"></i> 連同身分一起更改
+                    </button>
+                    <button onclick="cancelReset()" class="px-3 py-2 bg-transparent text-slate-400 hover:text-slate-600 rounded text-xs transition text-center underline">
+                        取消
+                    </button>
+                </div>
+            `;
+            addAIMessage(`您點擊了重新設定。<br>請問您是要切換「<b>功能模組</b>」，還是需要連同「<b>使用者身分</b>」一起更改呢？`, optionsHtml);
+        }
+
+        function softReset() {
+            document.getElementById('opts-reset')?.remove();
+            addUserMessage("僅重新選擇功能模組");
+
+            // 保留身分，清除模組與子模組記憶
+            state.module = null;
+            state.subModule = null;
+            state.step = 2;
+            saveState();
+
+            // 再次顯示模組選項
+            setTimeout(() => {
+                const btns = modulesData.map(mod =>
+                    `<button onclick="selectModule('${mod.name}')" class="flex flex-col items-center justify-center p-2 bg-white border border-gray-300 hover:border-brand-text hover:text-brand rounded text-xs transition gap-1 text-slate-700">
+                        <i class="fa-solid ${mod.icon}"></i> ${mod.name}
+                    </button>`
+                ).join('');
+
+                const optionsContainer = `<div class="grid grid-cols-2 gap-2 mt-1" id="opts-step2">${btns}</div>`;
+                addAIMessage(`沒問題，為您保留「<b>${state.identity}</b>」的身分設定。<br>接下來，您想諮詢哪個<b>功能模組</b>呢？`, optionsContainer);
+            }, 500);
+        }
+
+        function hardReset() {
+            document.getElementById('opts-reset')?.remove();
+            if (state.identity) addUserMessage("連同身分一起更改");
+
+            // 清除記憶並完全重新開始
+            sessionStorage.removeItem('ai_advisor_state');
+            state = { isOpen: true, step: 0, identity: null, module: null, subModule: null };
+
+            els.input.disabled = true;
+            els.btn.disabled = true;
+            els.input.placeholder = "請先完成上方選擇...";
+            els.input.value = '';
+
+            setTimeout(() => {
+                startGuidedSetup();
+            }, 300);
+        }
+
+        function cancelReset() {
+            document.getElementById('opts-reset')?.remove();
+
+            if (state.step === 4) {
+                els.input.disabled = false;
+                els.btn.disabled = false;
+            }
+
+            // 恢復原本的建議選項 (若是停留在資源生產力情境)
+            if (state.step === 4 && (state.subModule === '資源生產力' || state.module?.name === '循環指標')) {
+                showSuggestedQuestions([
+                    "資源生產力近五年的變化？",
+                    "如何解讀左側的 DMC 數據？",
+                    "我想匯出這份報告"
+                ]);
+            }
+        }
+
+        // --- 一般聊天邏輯 ---
+        function handleSendMessage(e) {
+            e.preventDefault();
+            const text = els.input.value.trim();
+            if (!text) return;
+
+            // 如果目前在步驟 3 (等待使用者手動輸入指標名稱)
+            if (state.step === 3) {
+                addUserMessage(text);
+                els.input.value = '';
+                els.input.disabled = true;
+                els.btn.disabled = true;
+                state.subModule = text; // 儲存使用者輸入的指標名稱
+
+                setTimeout(() => {
+                    finishSetup();
+                }, 600);
+                return;
+            }
+
+            if (state.step !== 4) return;
+
+            const sugg = document.getElementById('current-suggestions');
+            if (sugg) sugg.remove();
+
+            addUserMessage(text);
+            els.input.value = '';
+
+            // 模擬思考
+            const loadingId = 'loading-' + Date.now();
+            const wrapper = document.createElement('div');
+            wrapper.id = loadingId;
+            wrapper.className = `flex items-start gap-2 fade-in max-w-[90%] mt-2`;
+            wrapper.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-white flex-shrink-0 mt-1">
+                    <i class="fa-solid fa-robot text-xs"></i>
+                </div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 flex items-center gap-1">
+                    <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                </div>
+            `;
+            els.body.appendChild(wrapper);
+            scrollToBottom();
+
+            setTimeout(() => {
+                document.getElementById(loadingId).remove();
+                generateResponse(text);
+            }, 1200);
+        }
+
+        function generateResponse(question) {
+            // 情境模擬回答，引導使用者看背景圖表
+            let ans = "";
+            if (question.includes("解讀") || question.includes("數據")) {
+                ans = `您在左側圖表看到的「實質GDP」與「國內物質消費量(DMC)」是計算的核心。近五年來，由於我們推廣循環利用政策，DMC 的成長幅度已低於 GDP 成長，這意味著<strong>資源生產力正在穩步提升</strong>。`;
+            } else if (question.includes("匯出") || question.includes("報告")) {
+                ans = `沒問題，您可以點擊左側標題旁邊的 <i class="fa-solid fa-print border border-gray-300 p-1 rounded text-gray-500"></i> 圖示來列印，或者點擊分享按鈕取得圖表連結。需要我幫您摘要這份資料嗎？`;
+            } else {
+                ans = `針對您的問題，根據當前「資源生產力」模組的資料集顯示，台灣在此項指標的表現已達國際平均水準。<br>您可以參考畫面左方的公式說明（GDP/DMC）來理解細部計算方式。`;
+            }
+            addAIMessage(ans);
+        }
+
+    </script>
+</body>
+
+</html>
