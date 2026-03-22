@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股量化回測與 AI 決策系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .chart-title {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 10;
+            font-size: 0.8rem;
+            font-weight: bold;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* 圖表高度設定 */
+        #main-chart {
+            height: 380px;
+        }
+
+        #volume-chart {
+            height: 120px;
+        }
+
+        #kd-chart {
+            height: 120px;
+        }
+
+        #macd-chart {
+            height: 140px;
+        }
+
+        #margin-chart {
+            height: 120px;
+        }
+
+        #ratio-chart {
+            height: 120px;
+        }
+
+        .loader {
+            border: 4px solid #334155;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .tab-btn.active {
+            border-bottom: 3px solid #3b82f6;
+            color: #60a5fa;
+            background-color: #1e293b;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- 頂部頁籤導航 -->
+    <div class="bg-slate-900 border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex">
+            <button id="btn-tab-backtest"
+                class="tab-btn active px-8 py-4 text-slate-400 hover:text-white font-bold transition-all text-lg flex items-center gap-2">
+                📊 回測與圖表分析系統
+            </button>
+            <button id="btn-tab-decision"
+                class="tab-btn px-8 py-4 text-slate-400 hover:text-white font-bold transition-all text-lg flex items-center gap-2 border-l border-slate-700">
+                🤖 交易決策系統
+            </button>
+        </div>
+    </div>
+
+    <!-- 全局 Loading 遮罩 -->
+    <div id="loading"
+        class="hidden fixed inset-0 bg-slate-900/80 z-[100] flex-col items-center justify-center backdrop-blur-sm">
+        <div class="loader mb-4"></div>
+        <p class="text-blue-400 font-semibold text-lg tracking-widest" id="loading-text">正在從伺服器運算資料...</p>
+    </div>
+
+    <div class="max-w-7xl mx-auto w-full flex-grow p-4 md:p-6">
+
+        <!-- ==================== 模組一：回測與圖表系統 ==================== -->
+        <div id="view-backtest" class="tab-content active">
+
+            <!-- 控制面板 (獨立) -->
+            <div class="bg-slate-800 rounded-xl p-5 mb-4 shadow-lg border border-slate-700">
+                <h2 class="text-xl font-bold text-slate-200 mb-4 flex items-center gap-2">⚙️ 選擇商品與時間</h2>
+                <div class="flex flex-wrap gap-5 items-end">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">商品類型</label>
+                        <select id="bt-asset-select"
+                            class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none w-48">
+                            <optgroup label="【大盤指數】">
+                                <option value="TAIEX">台灣加權指數 (TAIEX)</option>
+                            </optgroup>
+                            <optgroup label="【期貨合約】">
+                                <option value="TX-0">大台近月 (TX)</option>
+                                <option value="TX-1">大台次月 (TX)</option>
+                                <option value="MTX-0">小台近月 (MTX)</option>
+                                <option value="MTX-1">小台次月 (MTX)</option>
+                                <option value="TMF-0">微台近月 (TMF)</option>
+                                <option value="TMF-1">微台次月 (TMF)</option>
+                            </optgroup>
+                            <optgroup label="【自訂個股】">
+                                <option value="STOCK">輸入股票代碼...</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div id="bt-stock-input-div" class="hidden">
+                        <label class="block text-sm text-slate-400 mb-1">股票代號</label>
+                        <input type="text" id="bt-stock-id" placeholder="例: 2330"
+                            class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white w-28 focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">開始日期</label>
+                        <input type="date" id="bt-start-date" value="2016-01-01"
+                            class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">結束日期</label>
+                        <input type="date" id="bt-end-date"
+                            class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <button id="bt-fetch-btn"
+                        class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg shadow-blue-900/20">
+                        下載資料並顯示圖表
+                    </button>
+                </div>
+            </div>
+
+            <!-- 圖表區 (移到回測工具上方) -->
+            <div id="bt-charts-wrapper" class="hidden flex-col gap-1 mb-6">
+                <div class="chart-container">
+                    <div class="chart-title text-blue-400" id="bt-chart-main-title">K線圖 (主圖)</div>
+                    <div id="main-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title text-slate-300">成交量</div>
+                    <div id="volume-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title text-orange-400">KD 指標 (9,3,3)</div>
+                    <div id="kd-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title text-emerald-400">MACD (12,26,9)</div>
+                    <div id="macd-chart"></div>
+                </div>
+                <div id="margin-chart-container" class="chart-container">
+                    <div class="chart-title text-pink-400">融資餘額(紅) / 融券餘額(綠)</div>
+                    <div id="margin-chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title text-yellow-300">預估融資維持率 Proxy (%) <span
+                            class="text-xs font-normal ml-2 text-slate-400">基準線 130/160</span></div>
+                    <div id="ratio-chart"></div>
+                </div>
+            </div>
+
+            <!-- 回測策略與結果面板 (移到圖表下方) -->
+            <div id="bt-strategy-panel" class="hidden grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                <!-- 策略勾選區 -->
+                <div class="xl:col-span-2 bg-slate-800 rounded-xl p-5 shadow-lg border border-slate-700">
+                    <h3 class="text-lg font-bold text-purple-400 mb-3 border-b border-slate-600 pb-2">🎯 量化回測工具
+                        (複選，達成條件即進場)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <!-- 做多條件 -->
+                        <div class="bg-slate-750 p-3 rounded bg-slate-900/50">
+                            <h4 class="text-red-400 font-bold mb-2">做多條件 (Long)</h4>
+                            <div class="space-y-1">
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc1" class="mr-2 accent-blue-500"> KD 低檔
+                                    (K&lt;=25)</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc2" class="mr-2 accent-blue-500" checked> KD
+                                    黃金交叉</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc3" class="mr-2 accent-blue-500"> RSI 上升趨勢</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc4" class="mr-2 accent-blue-500"> EMA6 &gt; EMA14
+                                    (多頭排列)</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc5" class="mr-2 accent-blue-500"> MACD 翻正</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc6" class="mr-2 accent-blue-500"> 成交量大於5日均量</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc7" class="mr-2 accent-blue-500"> 收紅K線</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc8" class="mr-2 accent-blue-500"> 融資減少 / 融券增加
+                                    (籌碼偏多)</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-lc9" class="mr-2 accent-blue-500"> 預估維持率改善
+                                    (&gt;160%)</label>
+                            </div>
+                        </div>
+                        <!-- 做空條件 -->
+                        <div class="bg-slate-750 p-3 rounded bg-slate-900/50">
+                            <h4 class="text-emerald-400 font-bold mb-2">做空條件 (Short)</h4>
+                            <div class="space-y-1">
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc1" class="mr-2 accent-blue-500"> KD 高檔
+                                    (K&gt;=75)</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc2" class="mr-2 accent-blue-500"> KD 死亡交叉</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc3" class="mr-2 accent-blue-500"> RSI 下降趨勢</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc4" class="mr-2 accent-blue-500"> EMA6 &lt; EMA14
+                                    (空頭排列)</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc5" class="mr-2 accent-blue-500"> MACD 翻負</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc6" class="mr-2 accent-blue-500"> 成交量大於5日均量</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc7" class="mr-2 accent-blue-500"> 收黑K線</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc8" class="mr-2 accent-blue-500"> 融資暴增 (散戶進場偏空)</label>
+                                <label class="flex items-center text-slate-300 cursor-pointer hover:text-white"><input
+                                        type="checkbox" id="bt-sc9" class="mr-2 accent-blue-500"> 預估維持率惡化
+                                    (&lt;140%)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="mt-5 pt-4 border-t border-slate-600 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <span class="text-xs text-slate-400 text-center md:text-left">出場設定：固定 ATR 停損 (1.5x) / 停利
+                            (3.0x，風報比 1:2)</span>
+                        <button id="bt-execute-btn"
+                            class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-8 rounded-lg transition-colors shadow-lg w-full md:w-auto">
+                            執行回測並標記圖表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 績效面板 -->
+                <div
+                    class="xl:col-span-1 bg-slate-800 rounded-xl p-5 shadow-lg border border-purple-500/50 flex flex-col justify-center">
+                    <h3 class="text-lg font-bold text-white mb-4 text-center">📈 策略績效報告</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center bg-slate-900 p-2 rounded"><span
+                                class="text-slate-400">總交易次數</span><span id="res-trades"
+                                class="font-bold text-white text-lg">-</span></div>
+                        <div class="flex justify-between items-center bg-slate-900 p-2 rounded"><span
+                                class="text-slate-400">勝率 (Win Rate)</span><span id="res-winrate"
+                                class="font-bold text-lg">-</span></div>
+                        <div class="flex justify-between items-center bg-slate-900 p-2 rounded"><span
+                                class="text-slate-400">總報酬率</span><span id="res-pnl" class="font-bold text-lg">-</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-900 p-2 rounded"><span
+                                class="text-slate-400">平均單筆報酬</span><span id="res-avgpnl"
+                                class="font-bold text-white">-</span></div>
+                        <div
+                            class="flex justify-between items-center bg-slate-900 p-2 rounded border border-red-900/50">
+                            <span class="text-slate-400">最大回撤 (MDD)</span><span id="res-mdd"
+                                class="font-bold text-red-400">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 模組二：交易決策系統 ==================== -->
+        <div id="view-decision" class="tab-content">
+            <div class="max-w-4xl mx-auto">
+                <div
+                    class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 shadow-2xl border border-blue-500/30 mb-6">
+                    <h2
+                        class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-6 flex items-center gap-3">
+                        🤖 AI 交易決策分析引擎
+                    </h2>
+                    <p class="text-slate-400 text-sm mb-6 border-l-4 border-blue-500 pl-3">
+                        本模組**完全獨立運作**。您可以指定「過去任何一天」來測試系統的決策能力。系統將結合技術面、籌碼面，以及您提供的**總經消息面**來給出最真實的進出場建議。
+                    </p>
+
+                    <!-- 獨立決策輸入區 -->
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/50 p-5 rounded-xl border border-slate-700/50 mb-8">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-2">1. 選擇分析商品</label>
+                            <select id="dec-asset-select"
+                                class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none w-full shadow-inner">
+                                <optgroup label="大盤">
+                                    <option value="TAIEX">台灣加權指數 (TAIEX)</option>
+                                </optgroup>
+                                <optgroup label="期貨">
+                                    <option value="TX-0">大台近月 (TX)</option>
+                                    <option value="TX-1">大台次月 (TX)</option>
+                                    <option value="MTX-0">小台近月 (MTX)</option>
+                                    <option value="MTX-1">小台次月 (MTX)</option>
+                                </optgroup>
+                                <optgroup label="個股">
+                                    <option value="STOCK">自訂個股代碼...</option>
+                                </optgroup>
+                            </select>
+                            <input type="text" id="dec-stock-id" placeholder="輸入股票代碼 (例: 2330)"
+                                class="hidden mt-2 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white w-full focus:ring-2 focus:ring-blue-500 outline-none uppercase shadow-inner">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-2">2. 目前持倉狀態</label>
+                            <div class="flex flex-col gap-2">
+                                <label
+                                    class="flex items-center gap-3 bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-600 cursor-pointer hover:border-blue-400 transition-colors">
+                                    <input type="radio" name="dec-pos" value="empty" checked
+                                        class="w-4 h-4 accent-blue-500"> <span class="text-white text-sm">空手觀望
+                                        (尋找進場點)</span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <label
+                                        class="flex-1 flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600 cursor-pointer hover:border-red-400 transition-colors">
+                                        <input type="radio" name="dec-pos" value="long" class="w-4 h-4 accent-red-500">
+                                        <span class="text-white text-sm">已做多</span>
+                                    </label>
+                                    <label
+                                        class="flex-1 flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600 cursor-pointer hover:border-emerald-400 transition-colors">
+                                        <input type="radio" name="dec-pos" value="short"
+                                            class="w-4 h-4 accent-emerald-500"> <span
+                                            class="text-white text-sm">已做空</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="dec-entry-div" class="hidden mt-2">
+                                <input type="number" id="dec-entry-price" placeholder="輸入您的進場成本價..."
+                                    class="bg-slate-800 border border-slate-500 rounded-lg px-4 py-2 text-white w-full focus:ring-2 focus:ring-blue-500 outline-none shadow-inner text-sm">
+                            </div>
+                        </div>
+
+                        <!-- 新增：日期與消息面環境 -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-2">3. 選擇分析日期 (盤後結算日)</label>
+                            <input type="date" id="dec-date"
+                                class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white w-full focus:ring-2 focus:ring-blue-500 outline-none shadow-inner">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-300 mb-2">4. 總經消息面環境 (Macro/News)</label>
+                            <select id="dec-macro"
+                                class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white w-full focus:ring-2 focus:ring-blue-500 outline-none shadow-inner text-sm">
+                                <option value="normal">🟢 正常市場 (依技術面為主)</option>
+                                <option value="panic">🔴 重大地緣風險/黑天鵝 (如美伊戰爭)</option>
+                                <option value="euphoria">🟡 市場極度狂熱 (如降息狂歡/資金熱潮)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button id="dec-execute-btn"
+                            class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 px-12 rounded-full text-lg shadow-xl shadow-blue-900/30 transition transform hover:-translate-y-1">
+                            🚀 產生 AI 決策報告
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 決策報告輸出區 -->
+                <div id="dec-result-panel"
+                    class="hidden bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-700">
+                    <!-- 標頭區 -->
+                    <div
+                        class="bg-slate-900 p-6 border-b border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-center md:text-left">
+                            <p class="text-slate-400 text-sm mb-1 tracking-widest uppercase">Action Recommendation</p>
+                            <h3 id="dec-action-text"
+                                class="text-4xl md:text-5xl font-black tracking-wider text-white drop-shadow-md">-</h3>
+                        </div>
+                        <div
+                            class="text-center md:text-right bg-slate-800 px-6 py-3 rounded-xl border border-slate-600">
+                            <p id="dec-target-date-label" class="text-slate-400 text-xs mb-1">目標日收盤價</p>
+                            <h3 id="dec-close-price" class="text-3xl font-bold text-slate-100 font-mono">-</h3>
+                        </div>
+                    </div>
+
+                    <!-- 理由區 -->
+                    <div class="p-6">
+                        <h4 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">🧠 綜合解析與決策理由</h4>
+                        <ul id="dec-reasons-list"
+                            class="space-y-3 text-slate-300 leading-relaxed bg-slate-900/50 p-5 rounded-xl border border-slate-700">
+                            <!-- JS 生成條列 -->
+                        </ul>
+                    </div>
+
+                    <!-- 點位區 -->
+                    <div class="bg-slate-900 p-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-700">
+                        <div class="bg-red-950/30 p-5 rounded-xl border border-red-900/50 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                            <span class="text-red-300 text-sm font-bold block mb-2 uppercase tracking-wider">防守 /
+                                停損建議</span>
+                            <span id="dec-sl-price"
+                                class="text-red-400 font-mono text-3xl font-black block mb-1">-</span>
+                            <p id="dec-sl-desc" class="text-xs text-slate-400 leading-tight"></p>
+                        </div>
+                        <div
+                            class="bg-emerald-950/30 p-5 rounded-xl border border-emerald-900/50 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                            <span class="text-emerald-300 text-sm font-bold block mb-2 uppercase tracking-wider">目標 /
+                                停利建議</span>
+                            <span id="dec-tp-price"
+                                class="text-emerald-400 font-mono text-3xl font-black block mb-1">-</span>
+                            <p id="dec-tp-desc" class="text-xs text-slate-400 leading-tight"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 核心數學與技術指標運算庫 (獨立)
+        // ==========================================
+        const Indicators = {
+            SMA: (data, n, key = 'close') => {
+                let res = [];
+                for (let i = 0; i < data.length; i++) {
+                    if (i < n - 1) res.push({ time: data[i].time, value: null });
+                    else {
+                        let sum = 0; for (let j = 0; j < n; j++) sum += data[i - j][key];
+                        res.push({ time: data[i].time, value: sum / n });
+                    }
+                }
+                return res;
+            },
+            EMA: (data, n, key = 'close') => {
+                let res = []; let k = 2 / (n + 1); let prev = data[0][key];
+                for (let i = 0; i < data.length; i++) {
+                    if (i === 0) { res.push({ time: data[i].time, value: prev }); continue; }
+                    let val = (data[i][key] * k) + (prev * (1 - k));
+                    res.push({ time: data[i].time, value: val }); prev = val;
+                }
+                return res;
+            },
+            KD: (data, n = 9) => {
+                let res = []; let pK = 50, pD = 50;
+                for (let i = 0; i < data.length; i++) {
+                    if (i < n - 1) { res.push({ time: data[i].time, k: 50, d: 50 }); continue; }
+                    let slice = data.slice(i - n + 1, i + 1);
+                    let h = Math.max(...slice.map(d => d.high)), l = Math.min(...slice.map(d => d.low));
+                    let rsv = h === l ? 50 : ((data[i].close - l) / (h - l)) * 100;
+                    let k = (2 / 3) * pK + (1 / 3) * rsv; let d = (2 / 3) * pD + (1 / 3) * k;
+                    res.push({ time: data[i].time, k: k, d: d }); pK = k; pD = d;
+                }
+                return res;
+            },
+            RSI: (data, n = 14) => {
+                let res = []; let g = 0, l = 0;
+                for (let i = 1; i <= n && i < data.length; i++) {
+                    let c = data[i].close - data[i - 1].close;
+                    if (c > 0) g += c; else l -= c;
+                }
+                let ag = g / n, al = l / n;
+                for (let i = 0; i < data.length; i++) {
+                    if (i < n) { res.push({ time: data[i].time, value: null }); continue; }
+                    let c = data[i].close - data[i - 1].close;
+                    let gain = c > 0 ? c : 0, loss = c < 0 ? -c : 0;
+                    ag = (ag * (n - 1) + gain) / n; al = (al * (n - 1) + loss) / n;
+                    let rs = al === 0 ? 100 : ag / al;
+                    res.push({ time: data[i].time, value: al === 0 ? 100 : 100 - (100 / (1 + rs)) });
+                }
+                return res;
+            },
+            MACD: (data, s = 12, l = 26, sig = 9) => {
+                let es = Indicators.EMA(data, s); let el = Indicators.EMA(data, l);
+                let dif = []; for (let i = 0; i < data.length; i++) dif.push({ time: data[i].time, value: es[i].value - el[i].value });
+                let dem = Indicators.EMA(dif, sig, 'value'); let hist = [];
+                for (let i = 0; i < data.length; i++) {
+                    let osc = dif[i].value - dem[i].value;
+                    hist.push({ time: data[i].time, value: osc, color: osc >= 0 ? 'rgba(239,68,68,0.7)' : 'rgba(34,197,94,0.7)' });
+                }
+                return { dif, dem, hist };
+            },
+            ATR: (data, n = 14) => {
+                let res = []; let trSum = 0;
+                for (let i = 0; i < data.length; i++) {
+                    if (i === 0) { res.push({ time: data[i].time, value: null }); trSum += (data[i].high - data[i].low); }
+                    else {
+                        let tr = Math.max(data[i].high - data[i].low, Math.abs(data[i].high - data[i - 1].close), Math.abs(data[i].low - data[i - 1].close));
+                        if (i < n) { trSum += tr; res.push({ time: data[i].time, value: null }); }
+                        else if (i === n) { trSum += tr; res.push({ time: data[i].time, value: trSum / n }); }
+                        else { res.push({ time: data[i].time, value: (res[i - 1].value * (n - 1) + tr) / n }); }
+                    }
+                }
+                return res;
+            }
+        };
+
+        // ==========================================
+        // API 獲取資料引擎
+        // ==========================================
+        async function fetchMarketData(assetValue, stockIdVal, startD, endD) {
+            let dataset, dataId;
+            let isFutures = assetValue.includes('TX') || assetValue.includes('TMF');
+            let futuresMonthIdx = 0;
+
+            if (assetValue === 'TAIEX') { dataset = 'TaiwanStockPrice'; dataId = 'TAIEX'; }
+            else if (assetValue === 'STOCK') { dataset = 'TaiwanStockPrice'; dataId = stockIdVal; }
+            else if (isFutures) {
+                dataset = 'TaiwanFuturesDaily';
+                const parts = assetValue.split('-');
+                dataId = parts[0];
+                futuresMonthIdx = parseInt(parts[1]);
+            }
+
+            const url = `https://api.finmindtrade.com/api/v4/data?dataset=${dataset}&data_id=${dataId}&start_date=${startD}&end_date=${endD}`;
+
+            try {
+                const res = await fetch(url);
+                const json = await res.json();
+                if (json.msg !== 'success' || !json.data || json.data.length === 0) return { price: [], margin: [] };
+
+                let rawPrice = json.data;
+                let finalPrice = [];
+
+                if (isFutures) {
+                    let grouped = {};
+                    rawPrice.forEach(d => {
+                        if (!grouped[d.date]) grouped[d.date] = [];
+                        if (String(d.contract_date).length <= 6) {
+                            grouped[d.date].push(d);
+                        }
+                    });
+
+                    const sortedDates = Object.keys(grouped).sort();
+                    for (let d of sortedDates) {
+                        grouped[d].sort((a, b) => String(a.contract_date).localeCompare(String(b.contract_date)));
+                        if (grouped[d][futuresMonthIdx]) {
+                            finalPrice.push(grouped[d][futuresMonthIdx]);
+                        }
+                    }
+                } else {
+                    finalPrice = rawPrice;
+                }
+
+                finalPrice = finalPrice.map(d => ({
+                    time: d.date, open: parseFloat(d.open), high: parseFloat(d.max), low: parseFloat(d.min), close: parseFloat(d.close),
+                    volume: parseFloat(d.Trading_money || d.Trading_Volume || d.trading_volume || d.volume || 0)
+                })).filter((v, i, a) => a.findIndex(t => (t.time === v.time)) === i).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                let marginData = [];
+                if (dataset === 'TaiwanStockPrice') {
+                    try {
+                        let mUrl = '';
+                        // 大盤與個股的融資券 API 端點與參數邏輯不同，需分開處理
+                        if (assetValue === 'TAIEX') {
+                            mUrl = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startD}&end_date=${endD}`;
+                        } else {
+                            mUrl = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMarginPurchaseShortSale&data_id=${dataId}&start_date=${startD}&end_date=${endD}`;
+                        }
+                        const mRes = await fetch(mUrl);
+                        const mJson = await mRes.json();
+                        if (mJson.msg === 'success' && mJson.data) marginData = mJson.data;
+                    } catch (e) { console.warn("籌碼資料獲取失敗", e); }
+                }
+
+                return { price: finalPrice, margin: marginData };
+            } catch (error) {
+                console.error(error);
+                return { price: [], margin: [] };
+            }
+        }
+
+        // ==========================================
+        // UI 全域與頁籤控制
+        // ==========================================
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('bt-end-date').value = todayStr;
+        document.getElementById('dec-date').value = todayStr; // 決策系統預設日期
+        let btCharts = []; let btData = { price: [], margin: [], marginProcessed: [] };
+
+        function showLoading(text) {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('loading').classList.add('flex');
+        }
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('loading').classList.remove('flex');
+        }
+
+        document.getElementById('btn-tab-backtest').addEventListener('click', function () {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            this.classList.add('active'); document.getElementById('view-backtest').classList.add('active');
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        });
+        document.getElementById('btn-tab-decision').addEventListener('click', function () {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            this.classList.add('active'); document.getElementById('view-decision').classList.add('active');
+        });
+
+        document.getElementById('bt-asset-select').addEventListener('change', e => {
+            document.getElementById('bt-stock-input-div').style.display = e.target.value === 'STOCK' ? 'block' : 'none';
+        });
+        document.getElementById('dec-asset-select').addEventListener('change', e => {
+            document.getElementById('dec-stock-id').style.display = e.target.value === 'STOCK' ? 'block' : 'none';
+        });
+        document.querySelectorAll('input[name="dec-pos"]').forEach(r => {
+            r.addEventListener('change', function () {
+                document.getElementById('dec-entry-div').style.display = (this.value === 'empty') ? 'none' : 'block';
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            if (btCharts.length > 0) {
+                const cIds = ['main-chart', 'volume-chart', 'kd-chart', 'macd-chart', 'margin-chart', 'ratio-chart'];
+                btCharts.forEach((c, i) => { let el = document.getElementById(cIds[i]); if (el) c.applyOptions({ width: el.clientWidth }); });
+            }
+        });
+
+        // ==========================================
+        // 模組一：回測系統圖表繪製
+        // ==========================================
+        function createChartOpt() {
+            return {
+                layout: { textColor: '#cbd5e1', background: { type: 'solid', color: '#0f172a' } },
+                grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
+                timeScale: { timeVisible: true, borderColor: '#475569' },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+            };
+        }
+
+        function processMarginProxy(priceData, marginRaw) {
+            let mData = [], sData = [], rData = [];
+            let sma20 = Indicators.SMA(priceData, 20);
+
+            let lastM = 0, lastS = 0;
+            priceData.forEach((d, i) => {
+                let mRec = marginRaw.find(m => m.date === d.time);
+                // 兼容不同 API 的欄位名稱，並沿用前一日數值避免圖表斷線
+                let mVal = mRec ? (mRec.MarginPurchaseTodayBalance || mRec.todayBalance || mRec.MarginPurchaseBalance || 0) : lastM;
+                let sVal = mRec ? (mRec.ShortSaleTodayBalance || mRec.ShortBalance || mRec.ShortSaleBalance || 0) : lastS;
+
+                if (mVal > 0) lastM = mVal;
+                if (sVal > 0) lastS = sVal;
+
+                mData.push({ time: d.time, value: mVal });
+                sData.push({ time: d.time, value: sVal });
+
+                let ratio = 160;
+                if (sma20[i].value) { ratio = (d.close / sma20[i].value) * 160; }
+                rData.push({ time: d.time, value: ratio });
+            });
+            return { mData, sData, rData };
+        }
+
+        function renderBacktestCharts() {
+            const data = btData.price;
+            const cIds = ['main-chart', 'volume-chart', 'kd-chart', 'macd-chart', 'margin-chart', 'ratio-chart'];
+            cIds.forEach(id => document.getElementById(id).innerHTML = '');
+            btCharts = [];
+
+            const mainChart = LightweightCharts.createChart(document.getElementById('main-chart'), createChartOpt());
+            btData.candleSeries = mainChart.addCandlestickSeries({ upColor: '#ef4444', downColor: '#22c55e', borderVisible: false, wickUpColor: '#ef4444', wickDownColor: '#22c55e' });
+            btData.candleSeries.setData(data); btCharts.push(mainChart);
+
+            const volChart = LightweightCharts.createChart(document.getElementById('volume-chart'), createChartOpt());
+            volChart.addHistogramSeries({ color: '#3b82f6', priceFormat: { type: 'volume' }, priceScaleId: '' })
+                .setData(data.map(d => ({ time: d.time, value: d.volume, color: d.close >= d.open ? 'rgba(239, 68, 68, 0.5)' : 'rgba(34, 197, 94, 0.5)' })));
+            btCharts.push(volChart);
+
+            const kdD = Indicators.KD(data);
+            const kdChart = LightweightCharts.createChart(document.getElementById('kd-chart'), createChartOpt());
+            kdChart.addLineSeries({ color: '#f97316', lineWidth: 1.5, title: 'K' }).setData(kdD.map(d => ({ time: d.time, value: d.k })));
+            kdChart.addLineSeries({ color: '#3b82f6', lineWidth: 1.5, title: 'D' }).setData(kdD.map(d => ({ time: d.time, value: d.d })));
+            btCharts.push(kdChart);
+
+            const macdD = Indicators.MACD(data);
+            const macdChart = LightweightCharts.createChart(document.getElementById('macd-chart'), createChartOpt());
+            macdChart.addHistogramSeries().setData(macdD.hist);
+            macdChart.addLineSeries({ color: '#3b82f6', lineWidth: 1.5, title: 'DIF' }).setData(macdD.dif);
+            macdChart.addLineSeries({ color: '#f97316', lineWidth: 1.5, title: 'MACD' }).setData(macdD.dem);
+            btCharts.push(macdChart);
+
+            const mp = processMarginProxy(data, btData.margin);
+            btData.marginProcessed = mp;
+
+            const marginContainer = document.getElementById('margin-chart-container');
+            const mChart = LightweightCharts.createChart(document.getElementById('margin-chart'), createChartOpt());
+
+            // 檢查是否有實質的融資券數據 (期貨沒有融資券)
+            if (mp.mData.length > 0 && mp.mData.some(d => d.value > 0)) {
+                marginContainer.style.display = 'block';
+                mChart.addLineSeries({ color: '#ef4444', lineWidth: 2, title: '融資' }).setData(mp.mData);
+                mChart.addLineSeries({ color: '#22c55e', lineWidth: 2, title: '融券' }).setData(mp.sData);
+                btCharts.push(mChart);
+            } else {
+                marginContainer.style.display = 'none'; // 若無資料則隱藏該圖表，避免破壞畫面
+            }
+
+            const rChart = LightweightCharts.createChart(document.getElementById('ratio-chart'), createChartOpt());
+            rChart.addLineSeries({ color: '#fde047', lineWidth: 2, title: '維持率估算' }).setData(mp.rData);
+            rChart.addLineSeries({ color: 'rgba(239,68,68,0.3)', lineWidth: 1, lineStyle: 2, title: '' }).setData(data.map(d => ({ time: d.time, value: 130 })));
+            rChart.addLineSeries({ color: 'rgba(34,197,94,0.3)', lineWidth: 1, lineStyle: 2, title: '' }).setData(data.map(d => ({ time: d.time, value: 160 })));
+            btCharts.push(rChart);
+
+            btCharts.forEach(c => {
+                c.timeScale().subscribeVisibleTimeRangeChange(r => {
+                    if (!r) return; // 修正錯誤：確保時間範圍不為空值才進行同步
+                    btCharts.forEach(o => {
+                        if (c !== o) {
+                            try {
+                                o.timeScale().setVisibleRange(r);
+                            } catch (e) { } // 忽略尚未準備好的圖表同步錯誤
+                        }
+                    });
+                });
+            });
+            mainChart.timeScale().fitContent();
+        }
+
+        // 獨立資料下載功能 (只畫圖不跑回測)
+        document.getElementById('bt-fetch-btn').addEventListener('click', async () => {
+            const asset = document.getElementById('bt-asset-select').value;
+            const sId = document.getElementById('bt-stock-id').value;
+            const start = document.getElementById('bt-start-date').value;
+            const end = document.getElementById('bt-end-date').value;
+
+            showLoading("下載歷史資料並繪製圖表中...");
+            btData = await fetchMarketData(asset, sId, start, end);
+            hideLoading();
+
+            if (btData.price.length > 50) {
+                document.getElementById('bt-charts-wrapper').classList.remove('hidden');
+                document.getElementById('bt-charts-wrapper').classList.add('flex');
+                document.getElementById('bt-strategy-panel').classList.remove('hidden');
+                document.getElementById('bt-strategy-panel').classList.add('grid');
+
+                renderBacktestCharts();
+
+                // 重設數據
+                document.getElementById('res-trades').innerText = '-';
+                document.getElementById('res-winrate').innerText = '-';
+                document.getElementById('res-pnl').innerText = '-';
+                document.getElementById('res-pnl').className = 'font-bold text-lg';
+                document.getElementById('res-avgpnl').innerText = '-';
+                document.getElementById('res-mdd').innerText = '-';
+
+            } else alert("獲取資料失敗或天數過少 (需至少50天)");
+        });
+
+
+        // 獨立執行回測功能
+        function runBacktestEngine() {
+            if (!btData.price || btData.price.length < 50) {
+                alert("請先點擊上方按鈕下載資料！");
+                return;
+            }
+            const data = btData.price;
+
+            const kd = Indicators.KD(data);
+            const rsi = Indicators.RSI(data);
+            const ema6 = Indicators.EMA(data, 6);
+            const ema14 = Indicators.EMA(data, 14);
+            const macd = Indicators.MACD(data);
+            const vol5 = Indicators.SMA(data, 5, 'volume');
+            const atr = Indicators.ATR(data, 14);
+            const rData = btData.marginProcessed.rData;
+            const mData = btData.marginProcessed.mData;
+            const sData = btData.marginProcessed.sData;
+
+            const lc = [
+                document.getElementById('bt-lc1').checked, document.getElementById('bt-lc2').checked, document.getElementById('bt-lc3').checked,
+                document.getElementById('bt-lc4').checked, document.getElementById('bt-lc5').checked, document.getElementById('bt-lc6').checked,
+                document.getElementById('bt-lc7').checked, document.getElementById('bt-lc8').checked, document.getElementById('bt-lc9').checked
+            ];
+            const sc = [
+                document.getElementById('bt-sc1').checked, document.getElementById('bt-sc2').checked, document.getElementById('bt-sc3').checked,
+                document.getElementById('bt-sc4').checked, document.getElementById('bt-sc5').checked, document.getElementById('bt-sc6').checked,
+                document.getElementById('bt-sc7').checked, document.getElementById('bt-sc8').checked, document.getElementById('bt-sc9').checked
+            ];
+            const hasLong = lc.some(x => x), hasShort = sc.some(x => x);
+
+            if (!hasLong && !hasShort) { alert("請至少勾選一個回測條件！"); return; }
+
+            let pos = 0, entryP = 0, entryATR = 0;
+            let trades = [], markers = [];
+            let peak = 1, cumulative = 1, maxDD = 0;
+
+            for (let i = 30; i < data.length; i++) {
+                let d = data[i], pd = data[i - 1];
+                let isL = hasLong, isS = hasShort;
+
+                if (hasLong && pos === 0) {
+                    if (lc[0] && kd[i].k > 25) isL = false;
+                    if (lc[1] && !(kd[i - 1].k < kd[i - 1].d && kd[i].k > kd[i].d)) isL = false;
+                    if (lc[2] && rsi[i].value <= rsi[i - 1].value) isL = false;
+                    if (lc[3] && !(ema6[i - 1].value < ema14[i - 1].value && ema6[i].value > ema14[i].value)) isL = false;
+                    if (lc[4] && !(macd.hist[i - 1].value < 0 && macd.hist[i].value > 0)) isL = false;
+                    if (lc[5] && d.volume <= vol5[i].value) isL = false;
+                    if (lc[6] && d.close <= d.open) isL = false;
+                    if (lc[7] && mData.length > i && (mData[i].value >= mData[i - 1].value || sData[i].value <= sData[i - 1].value)) isL = false;
+                    if (lc[8] && rData[i].value < 160) isL = false;
+
+                    if (isL) {
+                        pos = 1; entryP = d.close; entryATR = atr[i].value;
+                        markers.push({ time: d.time, position: 'belowBar', color: '#ef4444', shape: 'arrowUp', text: '🔺多' });
+                        continue;
+                    }
+                }
+
+                if (hasShort && pos === 0 && !isL) {
+                    if (sc[0] && kd[i].k < 75) isS = false;
+                    if (sc[1] && !(kd[i - 1].k > kd[i - 1].d && kd[i].k < kd[i].d)) isS = false;
+                    if (sc[2] && rsi[i].value >= rsi[i - 1].value) isS = false;
+                    if (sc[3] && !(ema6[i - 1].value > ema14[i - 1].value && ema6[i].value < ema14[i].value)) isS = false;
+                    if (sc[4] && !(macd.hist[i - 1].value > 0 && macd.hist[i].value < 0)) isS = false;
+                    if (sc[5] && d.volume <= vol5[i].value) isS = false;
+                    if (sc[6] && d.close >= d.open) isS = false;
+                    if (sc[7] && mData.length > i && (mData[i].value <= mData[i - 1].value)) isS = false;
+                    if (sc[8] && rData[i].value > 140) isS = false;
+
+                    if (isS) {
+                        pos = -1; entryP = d.close; entryATR = atr[i].value;
+                        markers.push({ time: d.time, position: 'aboveBar', color: '#22c55e', shape: 'arrowDown', text: '🔻空' });
+                    }
+                }
+
+                if (pos === 1) {
+                    let sl = entryP - 1.5 * entryATR;
+                    let tp = entryP + 3.0 * entryATR;
+                    if (d.low <= sl || d.high >= tp || i === data.length - 1) {
+                        let exitP = (d.high >= tp) ? tp : ((d.low <= sl) ? sl : d.close);
+                        let pnl = ((exitP - entryP) / entryP) * 100;
+                        trades.push(pnl); pos = 0;
+                        markers.push({ time: d.time, position: 'aboveBar', color: '#cbd5e1', shape: 'circle', text: '⚪平' });
+
+                        cumulative *= (1 + pnl / 100);
+                        if (cumulative > peak) peak = cumulative;
+                        let dd = ((cumulative - peak) / peak) * 100;
+                        if (dd < maxDD) maxDD = dd;
+                    }
+                } else if (pos === -1) {
+                    let sl = entryP + 1.5 * entryATR;
+                    let tp = entryP - 3.0 * entryATR;
+                    if (d.high >= sl || d.low <= tp || i === data.length - 1) {
+                        let exitP = (d.low <= tp) ? tp : ((d.high >= sl) ? sl : d.close);
+                        let pnl = ((entryP - exitP) / entryP) * 100;
+                        trades.push(pnl); pos = 0;
+                        markers.push({ time: d.time, position: 'belowBar', color: '#cbd5e1', shape: 'circle', text: '⚪平' });
+
+                        cumulative *= (1 + pnl / 100);
+                        if (cumulative > peak) peak = cumulative;
+                        let dd = ((cumulative - peak) / peak) * 100;
+                        if (dd < maxDD) maxDD = dd;
+                    }
+                }
+            }
+
+            btData.candleSeries.setMarkers(markers);
+
+            let wins = trades.filter(x => x > 0).length;
+            let total = trades.reduce((a, b) => a + b, 0);
+            let avg = trades.length ? total / trades.length : 0;
+            let winRate = trades.length ? ((wins / trades.length) * 100).toFixed(1) : 0;
+
+            document.getElementById('res-trades').innerText = trades.length;
+            document.getElementById('res-winrate').innerText = `${winRate}%`;
+            document.getElementById('res-pnl').innerText = `${total.toFixed(2)}%`;
+            document.getElementById('res-pnl').className = `font-bold text-lg ${total >= 0 ? 'text-red-400' : 'text-emerald-400'}`;
+            document.getElementById('res-avgpnl').innerText = `${avg.toFixed(2)}%`;
+            document.getElementById('res-mdd').innerText = `${maxDD.toFixed(2)}%`;
+        }
+        document.getElementById('bt-execute-btn').addEventListener('click', runBacktestEngine);
+
+
+        // ==========================================
+        // 模組二：交易決策系統邏輯 (含消息面權重覆寫)
+        // ==========================================
+        document.getElementById('dec-execute-btn').addEventListener('click', async () => {
+            const asset = document.getElementById('dec-asset-select').value;
+            const sId = document.getElementById('dec-stock-id').value;
+            const posStatus = document.querySelector('input[name="dec-pos"]:checked').value;
+            const entryPrice = parseFloat(document.getElementById('dec-entry-price').value);
+
+            const targetDateStr = document.getElementById('dec-date').value;
+            const macroState = document.getElementById('dec-macro').value; // 取得消息面覆寫設定
+
+            if (posStatus !== 'empty' && isNaN(entryPrice)) { alert("請輸入有效的進場成本！"); return; }
+            if (!targetDateStr) { alert("請選擇分析日期！"); return; }
+
+            // 自動回溯目標日期之前的半年資料
+            let endD = new Date(targetDateStr);
+            let startD = new Date(targetDateStr);
+            startD.setMonth(startD.getMonth() - 6);
+            let sStr = startD.toISOString().split('T')[0];
+            let eStr = endD.toISOString().split('T')[0];
+
+            showLoading(`正在擷取 ${targetDateStr} 及過去半年資料分析中...`);
+            let dataObj = await fetchMarketData(asset, sId, sStr, eStr);
+            hideLoading();
+
+            const dPrice = dataObj.price;
+            if (dPrice.length < 30) { alert(`在 ${targetDateStr} 之前無法取得足夠資料，請確保日期正確且非休假日。`); return; }
+
+            const cur = dPrice[dPrice.length - 1]; // 目標日期（或該日之前的最後一個交易日）
+            document.getElementById('dec-target-date-label').innerText = `${cur.time} 收盤價`;
+
+            // 指標
+            const ema20 = Indicators.EMA(dPrice, 20)[dPrice.length - 1].value;
+            const ema6 = Indicators.EMA(dPrice, 6);
+            const ema14 = Indicators.EMA(dPrice, 14);
+            const e6c = ema6[dPrice.length - 1].value, e6p = ema6[dPrice.length - 2].value;
+            const e14c = ema14[dPrice.length - 1].value, e14p = ema14[dPrice.length - 2].value;
+
+            const kd = Indicators.KD(dPrice);
+            const kdc = kd[dPrice.length - 1], kdp = kd[dPrice.length - 2];
+
+            const macd = Indicators.MACD(dPrice);
+            const macc = macd.hist[dPrice.length - 1].value, macp = macd.hist[dPrice.length - 2].value;
+
+            const vol5 = Indicators.SMA(dPrice, 5, 'volume')[dPrice.length - 1].value;
+            const atr = Indicators.ATR(dPrice, 14)[dPrice.length - 1].value;
+
+            let ratio = 160;
+            if (ema20) ratio = (cur.close / ema20) * 160;
+
+            let action = "-", reasons = [], sl = "-", tp = "-", slDesc = "-", tpDesc = "-";
+            let actionColor = "text-white";
+
+            // -- 核心邏輯 --
+            if (posStatus === 'empty') {
+                let bullScore = 0, bearScore = 0;
+
+                // 1. 技術面與籌碼面基本評分
+                if (cur.close > ema20) { bullScore += 2; reasons.push("✅ 價格穩居 20日均線之上，中線多頭。"); }
+                else { bearScore += 2; reasons.push("❌ 價格落於 20日均線之下，中線偏弱。"); }
+
+                if (e6p < e14p && e6c > e14c) { bullScore += 3; reasons.push("🚀 短天期均線 (6,14) 剛出現黃金交叉。"); }
+                if (e6p > e14p && e6c < e14c) { bearScore += 3; reasons.push("⚠️ 短天期均線 (6,14) 剛出現死亡交叉。"); }
+
+                if (kdp.k < kdp.d && kdc.k > kdc.d && kdc.k < 40) { bullScore += 2; reasons.push("📈 KD 指標低檔黃金交叉，動能轉強。"); }
+                if (kdp.k > kdp.d && kdc.k < kdc.d && kdc.k > 60) { bearScore += 2; reasons.push("📉 KD 指標高檔死亡交叉，動能轉弱。"); }
+
+                if (macc > 0 && macc > macp) { bullScore += 1; reasons.push("🔼 MACD 多方控盤。"); }
+                if (macc < 0 && macc < macp) { bearScore += 1; reasons.push("🔽 MACD 空方壓制。"); }
+
+                if (cur.volume > vol5) reasons.push("🔥 成交量大於5日均量，趨勢有量能支持。");
+                if (ratio > 165) reasons.push("💰 預估維持率處於極健康狀態。");
+                if (ratio < 135) reasons.push("🩸 預估維持率偏低，面臨潛在斷頭賣壓風險。");
+
+                // 2. 消息面 (Macro) 覆寫系統
+                let riskMultiplier = 1.0; // ATR 防守距離乘數
+                if (macroState === 'panic') {
+                    bearScore += 10; // 絕對空方權重覆寫
+                    riskMultiplier = 0.5; // 恐慌狀態下防守極度縮緊
+                    reasons.unshift("🚨 【消息面強制覆寫】發生重大地緣政治風險/黑天鵝，技術面支撐隨時可能失效，系統已切換至『極度保守防禦模式』！");
+                } else if (macroState === 'euphoria') {
+                    bullScore += 5;
+                    riskMultiplier = 1.2;
+                    reasons.unshift("🚀 【消息面強制覆寫】市場情緒處於極度狂熱/資金氾濫，技術面超買可能鈍化，容易出現非理性噴出。");
+                }
+
+                // 3. 結算Action
+                if (bullScore >= 4 && bearScore <= 2) {
+                    action = "BUY (建議做多)"; actionColor = "text-red-500";
+                    sl = (cur.close - (1.5 * riskMultiplier) * atr).toFixed(2);
+                    slDesc = `依據市場波動，設 ${1.5 * riskMultiplier} ATR 初始防守。`;
+                    tp = (cur.close + 3.0 * atr).toFixed(2);
+                    tpDesc = "3.0 ATR 風險報酬比 1:2 目標價";
+                } else if (bearScore >= 4 && bullScore <= 2) {
+                    action = "SELL (放空或極度避險)"; actionColor = "text-emerald-500";
+                    sl = (cur.close + (1.5 * riskMultiplier) * atr).toFixed(2);
+                    slDesc = `空單 ${1.5 * riskMultiplier} ATR 初始防守。`;
+                    tp = (cur.close - 3.0 * atr).toFixed(2);
+                    tpDesc = "3.0 ATR 目標回補價";
+                } else {
+                    action = "HOLD (空手觀望)"; actionColor = "text-slate-400";
+                    reasons.unshift("⏸️ 目前多空訊號交雜，或受總經消息面干擾未達高勝率進場標準。");
+                    sl = "N/A"; tp = "N/A"; slDesc = "無部位"; tpDesc = "無部位";
+                }
+            }
+            else if (posStatus === 'long') {
+                let pnl = ((cur.close - entryPrice) / entryPrice * 100).toFixed(2);
+                reasons.push(`📊 目前帳面績效約 ${pnl}%。`);
+
+                let atrMult = macroState === 'panic' ? 0.8 : 1.5; // 恐慌時防守極度縮緊
+                if (macroState === 'panic') reasons.unshift("🚨 【重大風險警報】市場恐慌，系統已自動拉高移動停損底線，建議不戀棧！");
+
+                let trailSL = Math.max(entryPrice, ema20);
+                if (cur.close < (cur.close - atrMult * atr)) trailSL = cur.close - atrMult * atr;
+
+                if (cur.close < ema20 || macroState === 'panic' && cur.close < (cur.close - atrMult * atr)) {
+                    action = "CLOSE (停損/停利離場)"; actionColor = "text-amber-500";
+                    reasons.push("🚨 價格跌破防守線 (或因風險事件觸發緊急避險)，短多趨勢破壞，建議立刻離場保本/獲利了結！");
+                    sl = "即刻執行"; tp = "-";
+                } else {
+                    action = "HOLD (多單續抱)"; actionColor = "text-red-400";
+                    reasons.push("✅ 價格穩居均線之上，動能無明顯衰退，建議讓利潤繼續奔跑。");
+                    sl = trailSL.toFixed(2); slDesc = `移動停損點 (月線或 ${atrMult} ATR)`;
+                    tp = (entryPrice + 3 * atr).toFixed(2); tpDesc = "原定 3 ATR 目標價";
+                }
+            }
+            else if (posStatus === 'short') {
+                let pnl = ((entryPrice - cur.close) / entryPrice * 100).toFixed(2);
+                reasons.push(`📊 目前帳面績效約 ${pnl}%。`);
+
+                let atrMult = macroState === 'euphoria' ? 0.8 : 1.5; // 狂熱時軋空防禦
+                if (macroState === 'euphoria') reasons.unshift("🚀 【狂熱軋空警報】市場資金氾濫情緒極佳，做空風險極高，防禦已縮緊！");
+
+                let trailSL = Math.min(entryPrice, ema20);
+                if (cur.close > ema20 || macroState === 'euphoria') {
+                    action = "CLOSE (回補出場)"; actionColor = "text-amber-500";
+                    reasons.push("🚨 收盤價強勢突破防守線 (或市場極度狂熱)，為避免軋空暴雷風險，建議立刻空單回補！");
+                    sl = "即刻執行"; tp = "-";
+                } else {
+                    action = "HOLD (空單續抱)"; actionColor = "text-emerald-400";
+                    reasons.push("✅ 價格受制於均線，空方趨勢延續中。");
+                    sl = trailSL.toFixed(2); slDesc = "移動停損點 (月線或保本)";
+                    tp = (entryPrice - 3 * atr).toFixed(2); tpDesc = "原定 3 ATR 目標價";
+                }
+            }
+
+            document.getElementById('dec-action-text').innerText = action;
+            document.getElementById('dec-action-text').className = `text-4xl md:text-5xl font-black tracking-wider drop-shadow-md ${actionColor}`;
+            document.getElementById('dec-close-price').innerText = cur.close.toFixed(2);
+            document.getElementById('dec-reasons-list').innerHTML = reasons.map(r => `<li class="flex gap-2"><span class="text-blue-400">▹</span> ${r}</li>`).join('');
+            document.getElementById('dec-sl-price').innerText = sl;
+            document.getElementById('dec-sl-desc').innerText = slDesc;
+            document.getElementById('dec-tp-price').innerText = tp;
+            document.getElementById('dec-tp-desc').innerText = tpDesc;
+            document.getElementById('dec-result-panel').classList.remove('hidden');
+        });
+
+    </script>
+</body>
+
+</html>
